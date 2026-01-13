@@ -1,9 +1,14 @@
 import type * as THREE from "three";
 
 export type MediaItem = {
-  url: string;
-  width: number;
-  height: number;
+  id: string;
+  type: 'image' | 'card' | 'html';
+  src?: string;
+  content?: {
+    title?: string;
+    description?: string;
+    html?: string;
+  };
 };
 
 export type InfiniteCanvasProps = {

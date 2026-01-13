@@ -6,6 +6,7 @@
   align-items: center;
   justify-content: center;
   background-color: var(--color-loader-bg);
+  background-color: black;
   transition: opacity 0.5s ease-out;
 }
 
@@ -20,16 +21,27 @@
 }
 
 .progressBarContainer {
-  width: 200px;
-  background-color: var(--color-loader-bar-bg);
-  height: 4px;
-  border-radius: 2px;
-  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+  background: conic-gradient(
+    from 0deg,
+    red,
+    #ff9a00 10%,
+    #d0de21,
+    #4fdc4a,
+    #3fdad8,
+    #2fc9e2,
+    #1c7fee,
+    #5f15f2,
+    #ba0cf8,
+    #fb07d9 90%,
+    red
+  );
+  mask: conic-gradient(#000 var(--progress), transparent 0);
+  -webkit-mask: conic-gradient(#000 var(--progress), transparent 0);
 }
 
 .progressBarFill {
-  height: 100%;
-  width: 100%;
-  transform-origin: left;
-  background-color: var(--color-loader-bar-fill);
+  display: none;
 }

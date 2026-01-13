@@ -41,6 +41,10 @@ export function PageLoader({ progress }: { progress: number }) {
     }
   }, [minTimeElapsed, progress, visualProgress]);
 
+  React.useEffect(() => {
+    console.log('Progress:', progress, 'Visual:', visualProgress, 'Show:', show);
+  }, [progress, visualProgress, show]);
+
   if (!show) {
     return null;
   }
@@ -49,9 +53,10 @@ export function PageLoader({ progress }: { progress: number }) {
 
   return (
     <div className={`${styles.overlay} ${isHidden ? styles.hidden : styles.visible}`}>
-      <div className={styles.progressBarContainer}>
-        <div className={styles.progressBarFill} style={{ transform: `scaleX(${visualProgress / 100})` }} />
-      </div>
+      <div 
+        className={styles.progressBarContainer}
+        style={{ '--progress': `${visualProgress}%` } as React.CSSProperties}
+      />
     </div>
   );
 }

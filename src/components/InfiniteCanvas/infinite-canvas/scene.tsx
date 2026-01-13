@@ -23,6 +23,23 @@ import { getTexture } from "./texture-manager";
 import type { ChunkData, InfiniteCanvasProps, MediaItem, PlaneData } from "./types";
 import { generateChunkPlanesCached, getChunkUpdateThrottleMs, shouldThrottleUpdate } from "./utils";
 
+const createCardCanvas = (content?: MediaItem['content']) => {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d')!;
+  
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, 512, 512);
+  ctx.fillStyle = '#000';
+  ctx.font = '24px Arial';
+  ctx.fillText(content?.title || '', 20, 50);
+  ctx.font = '16px Arial';
+  ctx.fillText(content?.description || '', 20, 100);
+  
+  return canvas;
+};
+
 const PLANE_GEOMETRY = new THREE.PlaneGeometry(1, 1);
 
 const KEYBOARD_MAP = [
@@ -130,17 +147,15 @@ function MediaPlane({
     mesh.visible = state.opacity > INVIS_THRESHOLD;
   });
 
-  // Calculate display scale from media dimensions (from manifest)
   const displayScale = React.useMemo(() => {
     if (media.width && media.height) {
       const aspect = media.width / media.height;
       return new THREE.Vector3(scale.y * aspect, scale.y, 1);
     }
-
     return scale;
   }, [media.width, media.height, scale]);
 
-  // Load texture with onLoad callback
+  // Load texture
   React.useEffect(() => {
     const state = localState.current;
     state.ready = false;
@@ -148,7 +163,6 @@ function MediaPlane({
     setIsReady(false);
 
     const material = materialRef.current;
-
     if (material) {
       material.opacity = 0;
       material.depthWrite = false;
@@ -173,11 +187,18 @@ function MediaPlane({
       return;
     }
 
-    material.map = texture;
+    // Check media type and apply appropriate texture
+    if (media.type === 'image') {
+      material.map = texture;
+    } else if (media.type === 'card') {
+      const canvas = createCardCanvas(media.content);
+      material.map = new THREE.CanvasTexture(canvas);
+    }
+
     material.opacity = state.opacity;
     material.depthWrite = state.opacity >= 1;
     mesh.scale.copy(displayScale);
-  }, [displayScale, texture, isReady]);
+  }, [displayScale, texture, isReady, media]);
 
   if (!texture || !isReady) {
     return null;
@@ -189,6 +210,8 @@ function MediaPlane({
     </mesh>
   );
 }
+
+
 
 function Chunk({
   cx,
