@@ -11,7 +11,25 @@ export function App() {
   React.useEffect(() => {
     fetch('/artworks/manifest.json')
       .then(res => res.json())
-      .then(data => setMedia(data));
+      .then(data => {
+        const cards: MediaItem[] = [
+          { 
+            id: 'card-1', 
+            src: '', 
+            type: 'card',
+            content: { title: 'Hello World', description: 'This is a card' }
+          },
+          { 
+            id: 'card-2', 
+            src: '', 
+            type: 'card',
+            content: { title: 'Another Card', description: 'More content here' }
+          },
+        ];
+        
+        const combined = [...data];
+        setMedia(combined);
+      });
   }, []);
 
   if (!media.length) {

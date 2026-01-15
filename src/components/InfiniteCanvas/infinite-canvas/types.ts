@@ -2,12 +2,13 @@ import type * as THREE from "three";
 
 export type MediaItem = {
   id: string;
-  type: 'image' | 'card' | 'html';
-  src?: string;
+  src: string;
+  type?: 'image' | 'card';
+  width?: number;
+  height?: number;
   content?: {
     title?: string;
     description?: string;
-    html?: string;
   };
 };
 

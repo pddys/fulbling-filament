@@ -155,7 +155,7 @@ function MediaPlane({
     return scale;
   }, [media.width, media.height, scale]);
 
-  // Load texture
+  // Load texture - skip for cards
   React.useEffect(() => {
     const state = localState.current;
     state.ready = false;
@@ -169,6 +169,15 @@ function MediaPlane({
       material.map = null;
     }
 
+    // Cards don't need texture loading
+    if (media.type === 'card') {
+      state.ready = true;
+      setIsReady(true);
+      setTexture(null); // Set null to trigger canvas creation
+      return;
+    }
+
+    // Only load textures for images
     const tex = getTexture(media, () => {
       state.ready = true;
       setIsReady(true);
@@ -183,26 +192,27 @@ function MediaPlane({
     const mesh = meshRef.current;
     const state = localState.current;
 
-    if (!material || !mesh || !texture || !isReady || !state.ready) {
+    if (!material || !mesh || !isReady || !state.ready) {
       return;
     }
 
-    // Check media type and apply appropriate texture
-    if (media.type === 'image') {
-      material.map = texture;
-    } else if (media.type === 'card') {
+    // Handle cards
+    if (media.type === 'card') {
       const canvas = createCardCanvas(media.content);
       material.map = new THREE.CanvasTexture(canvas);
+      material.opacity = state.opacity;
+      material.depthWrite = state.opacity >= 1;
+      mesh.scale.copy(displayScale);
+      return;
     }
 
+    // Handle images
+    if (!texture) return;
+    material.map = texture;
     material.opacity = state.opacity;
     material.depthWrite = state.opacity >= 1;
     mesh.scale.copy(displayScale);
   }, [displayScale, texture, isReady, media]);
-
-  if (!texture || !isReady) {
-    return null;
-  }
 
   return (
     <mesh ref={meshRef} position={position} scale={displayScale} visible={false} geometry={PLANE_GEOMETRY}>

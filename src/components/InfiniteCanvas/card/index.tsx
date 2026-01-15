@@ -4,5 +4,6 @@ export const Card = ({ title, description }: { title: string; description: strin
   <div className={styles.card}>
     <h3>{title}</h3>
     <p>{description}</p>
+    <button>Info & Tickets</button>
   </div>
 );
