@@ -1,0 +1,32 @@
+@font-face {
+  font-family: "TeX Gyre Heros";
+  src: url("../fonts/TeX-Gyre-Heros/texgyreheroscn-regular.otf") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "TeX Gyre Heros";
+  src: url("../fonts/TeX-Gyre-Heros/texgyreheroscn-italic.otf") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "TeX Gyre Heros";
+  src: url("../fonts/TeX-Gyre-Heros/texgyreheroscn-bold.otf") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "TeX Gyre Heros";
+  src: url("../fonts/TeX-Gyre-Heros/texgyreheroscn-bolditalic.otf")
+    format("woff2");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}

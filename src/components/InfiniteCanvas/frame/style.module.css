@@ -9,15 +9,9 @@
   justify-items: start;
   align-items: center;
   grid-template-columns: auto auto auto auto 1fr;
-  grid-template-areas:
-    "title title credits ..."
-    "back archive github ..."
-    "tags tags tags tags"
-    "sponsor sponsor sponsor sponsor";
   color: #fff;
   mix-blend-mode: difference;
-  font-family: "DM Sans", sans-serif;
-  font-weight: 300;
+  font-family: "TeX Gyre Heros";
   text-transform: uppercase;
 }
 
@@ -30,12 +24,152 @@
 
 .frame__title {
   grid-area: title;
-  font-family: "Asul", serif;
+  font-family: "TeX Gyre Heros";
   font-size: 1rem;
   font-weight: 400;
   margin: 0;
   color: #fff;
   mix-blend-mode: difference;
+}
+
+.frame__borders {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  width: 100dvw;
+  height: 100dvh;
+  z-index: -1;
+  --spacing-unit: 24px;
+}
+.frame__border {
+  pointer-events: none;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  border: 1px solid #fff;
+  width: 20px;
+  height: 20px;
+  opacity: 0.15;
+}
+
+.frame__border--top-right {
+  top: var(--spacing-unit);
+  right: var(--spacing-unit);
+  border-width: 1px 1px 0 0;
+  left: auto;
+  bottom: auto;
+}
+
+.frame__border--top-left {
+  top: var(--spacing-unit);
+  left: var(--spacing-unit);
+  border-width: 1px 0 0 1px;
+  right: auto;
+  bottom: auto;
+}
+
+.frame__border--bottom-right {
+  bottom: var(--spacing-unit);
+  right: var(--spacing-unit);
+  border-width: 0 1px 1px 0;
+  left: auto;
+  top: auto;
+}
+
+.frame__border--bottom-left {
+  bottom: var(--spacing-unit);
+  left: var(--spacing-unit);
+  border-width: 0 0 1px 1px;
+  right: auto;
+  top: auto;
+}
+
+.frame__border--top-centre {
+  top: 0;
+  right: 50%;
+  border-width: 0 1px 0 0;
+  left: auto;
+  bottom: auto;
+  transform: translateX(-50%);
+  height: 40px;
+  width: 1px;
+}
+
+.frame__border--bottom-centre {
+  top: auto;
+  right: 50%;
+  border-width: 0 0 0 1px;
+  left: auto;
+  bottom: 0;
+  transform: translateX(-50%);
+  height: 40px;
+  width: 1px;
+}
+
+.frame__border--left-centre {
+  top: 50%;
+  right: auto;
+  border-width: 1px 0 0 0;
+  left: 0;
+  bottom: auto;
+  transform: translateY(-50%);
+  height: 1px;
+  width: 40px;
+}
+
+.frame__border--right-centre {
+  top: 50%;
+  right: 0;
+  border-width: 0 0 1px 0;
+  left: auto;
+  bottom: 0;
+  transform: translateY(-50%);
+  height: 1px;
+  width: 40px;
+}
+
+.frame__circle {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    padding: 2px;
+    background: conic-gradient(
+      from 0deg,
+      red,
+      #ff9a00 10%,
+      #d0de21,
+      #4fdc4a,
+      #3fdad8,
+      #2fc9e2,
+      #1c7fee,
+      #5f15f2,
+      #ba0cf8,
+      #fb07d9 90%,
+      red
+    );
+    mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    animation: rotate 6s linear infinite;
+  }
+}
+
+@keyframes rotate {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .frame__back {

@@ -1,4 +1,9 @@
-import { KeyboardControls, Stats, useKeyboardControls, useProgress } from "@react-three/drei";
+import {
+  KeyboardControls,
+  Stats,
+  useKeyboardControls,
+  useProgress,
+} from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as React from "react";
 import * as THREE from "three";
@@ -20,23 +25,27 @@ import {
 } from "./constants";
 import styles from "./style.module.css";
 import { getTexture } from "./texture-manager";
-import type { ChunkData, InfiniteCanvasProps, MediaItem, PlaneData } from "./types";
-import { generateChunkPlanesCached, getChunkUpdateThrottleMs, shouldThrottleUpdate } from "./utils";
+import type {
+  ChunkData,
+  InfiniteCanvasProps,
+  MediaItem,
+  PlaneData,
+} from "./types";
+import {
+  generateChunkPlanesCached,
+  getChunkUpdateThrottleMs,
+  shouldThrottleUpdate,
+} from "./utils";
 
-const createCardCanvas = (content?: MediaItem['content']) => {
-  const canvas = document.createElement('canvas');
+const createCardCanvas = (content?: MediaItem["content"]) => {
+  const canvas = document.createElement("canvas");
   canvas.width = 512;
   canvas.height = 512;
-  const ctx = canvas.getContext('2d')!;
-  
-  ctx.fillStyle = '#fff';
+  const ctx = canvas.getContext("2d")!;
+
+  ctx.fillStyle = "#000000";
   ctx.fillRect(0, 0, 512, 512);
-  ctx.fillStyle = '#000';
-  ctx.font = '24px Arial';
-  ctx.fillText(content?.title || '', 20, 50);
-  ctx.font = '16px Arial';
-  ctx.fillText(content?.description || '', 20, 100);
-  
+
   return canvas;
 };
 
@@ -118,7 +127,11 @@ function MediaPlane({
     }
 
     const cam = cameraGridRef.current;
-    const dist = Math.max(Math.abs(chunkCx - cam.cx), Math.abs(chunkCy - cam.cy), Math.abs(chunkCz - cam.cz));
+    const dist = Math.max(
+      Math.abs(chunkCx - cam.cx),
+      Math.abs(chunkCy - cam.cy),
+      Math.abs(chunkCz - cam.cz),
+    );
     const absDepth = Math.abs(position.z - cam.camZ);
 
     if (absDepth > DEPTH_FADE_END + 50) {
@@ -130,16 +143,29 @@ function MediaPlane({
     }
 
     const gridFade =
-      dist <= RENDER_DISTANCE ? 1 : Math.max(0, 1 - (dist - RENDER_DISTANCE) / Math.max(CHUNK_FADE_MARGIN, 0.0001));
+      dist <= RENDER_DISTANCE
+        ? 1
+        : Math.max(
+            0,
+            1 - (dist - RENDER_DISTANCE) / Math.max(CHUNK_FADE_MARGIN, 0.0001),
+          );
 
     const depthFade =
       absDepth <= DEPTH_FADE_START
         ? 1
-        : Math.max(0, 1 - (absDepth - DEPTH_FADE_START) / Math.max(DEPTH_FADE_END - DEPTH_FADE_START, 0.0001));
+        : Math.max(
+            0,
+            1 -
+              (absDepth - DEPTH_FADE_START) /
+                Math.max(DEPTH_FADE_END - DEPTH_FADE_START, 0.0001),
+          );
 
     const target = Math.min(gridFade, depthFade * depthFade);
 
-    state.opacity = target < INVIS_THRESHOLD && state.opacity < INVIS_THRESHOLD ? 0 : lerp(state.opacity, target, 0.18);
+    state.opacity =
+      target < INVIS_THRESHOLD && state.opacity < INVIS_THRESHOLD
+        ? 0
+        : lerp(state.opacity, target, 0.18);
 
     const isFullyOpaque = state.opacity > 0.99;
     material.opacity = isFullyOpaque ? 1 : state.opacity;
@@ -170,7 +196,7 @@ function MediaPlane({
     }
 
     // Cards don't need texture loading
-    if (media.type === 'card') {
+    if (media.type === "card") {
       state.ready = true;
       setIsReady(true);
       setTexture(null); // Set null to trigger canvas creation
@@ -197,7 +223,7 @@ function MediaPlane({
     }
 
     // Handle cards
-    if (media.type === 'card') {
+    if (media.type === "card") {
       const canvas = createCardCanvas(media.content);
       material.map = new THREE.CanvasTexture(canvas);
       material.opacity = state.opacity;
@@ -215,13 +241,22 @@ function MediaPlane({
   }, [displayScale, texture, isReady, media]);
 
   return (
-    <mesh ref={meshRef} position={position} scale={displayScale} visible={false} geometry={PLANE_GEOMETRY}>
-      <meshBasicMaterial ref={materialRef} transparent opacity={0} side={THREE.DoubleSide} />
+    <mesh
+      ref={meshRef}
+      position={position}
+      scale={displayScale}
+      visible={false}
+      geometry={PLANE_GEOMETRY}
+    >
+      <meshBasicMaterial
+        ref={materialRef}
+        transparent
+        opacity={0}
+        side={THREE.DoubleSide}
+      />
     </mesh>
   );
 }
-
-
 
 function Chunk({
   cx,
@@ -240,7 +275,8 @@ function Chunk({
 
   React.useEffect(() => {
     let canceled = false;
-    const run = () => !canceled && setPlanes(generateChunkPlanesCached(cx, cy, cz));
+    const run = () =>
+      !canceled && setPlanes(generateChunkPlanesCached(cx, cy, cz));
 
     if (typeof requestIdleCallback !== "undefined") {
       const id = requestIdleCallback(run, { timeout: 100 });
@@ -320,13 +356,26 @@ const createInitialState = (camZ: number): ControllerState => ({
   pendingChunk: null,
 });
 
-function SceneController({ media, onTextureProgress }: { media: MediaItem[]; onTextureProgress?: (progress: number) => void }) {
+function SceneController({
+  media,
+  onTextureProgress,
+}: {
+  media: MediaItem[];
+  onTextureProgress?: (progress: number) => void;
+}) {
   const { camera, gl } = useThree();
   const isTouchDevice = useIsTouchDevice();
   const [, getKeys] = useKeyboardControls<keyof KeyboardKeys>();
 
-  const state = React.useRef<ControllerState>(createInitialState(INITIAL_CAMERA_Z));
-  const cameraGridRef = React.useRef<CameraGridState>({ cx: 0, cy: 0, cz: 0, camZ: camera.position.z });
+  const state = React.useRef<ControllerState>(
+    createInitialState(INITIAL_CAMERA_Z),
+  );
+  const cameraGridRef = React.useRef<CameraGridState>({
+    cx: 0,
+    cy: 0,
+    cz: 0,
+    camZ: camera.position.z,
+  });
 
   const [chunks, setChunks] = React.useState<ChunkData[]>([]);
 
@@ -484,7 +533,11 @@ function SceneController({ media, onTextureProgress }: { media: MediaItem[]; onT
     s.basePos.y += s.velocity.y;
     s.basePos.z += s.velocity.z;
 
-    camera.position.set(s.basePos.x + s.drift.x, s.basePos.y + s.drift.y, s.basePos.z);
+    camera.position.set(
+      s.basePos.x + s.drift.x,
+      s.basePos.y + s.drift.y,
+      s.basePos.z,
+    );
 
     s.targetVel.x *= VELOCITY_DECAY;
     s.targetVel.y *= VELOCITY_DECAY;
@@ -502,9 +555,15 @@ function SceneController({ media, onTextureProgress }: { media: MediaItem[]; onT
       s.lastChunkKey = key;
     }
 
-    const throttleMs = getChunkUpdateThrottleMs(isZooming, Math.abs(s.velocity.z));
+    const throttleMs = getChunkUpdateThrottleMs(
+      isZooming,
+      Math.abs(s.velocity.z),
+    );
 
-    if (s.pendingChunk && shouldThrottleUpdate(s.lastChunkUpdate, throttleMs, now)) {
+    if (
+      s.pendingChunk &&
+      shouldThrottleUpdate(s.lastChunkUpdate, throttleMs, now)
+    ) {
       const { cx: ucx, cy: ucy, cz: ucz } = s.pendingChunk;
       s.pendingChunk = null;
       s.lastChunkUpdate = now;
@@ -515,14 +574,18 @@ function SceneController({ media, onTextureProgress }: { media: MediaItem[]; onT
           cx: ucx + o.dx,
           cy: ucy + o.dy,
           cz: ucz + o.dz,
-        }))
+        })),
       );
     }
   });
 
   React.useEffect(() => {
     const s = state.current;
-    s.basePos = { x: camera.position.x, y: camera.position.y, z: camera.position.z };
+    s.basePos = {
+      x: camera.position.x,
+      y: camera.position.y,
+      z: camera.position.z,
+    };
 
     setChunks(
       CHUNK_OFFSETS.map((o) => ({
@@ -530,14 +593,21 @@ function SceneController({ media, onTextureProgress }: { media: MediaItem[]; onT
         cx: o.dx,
         cy: o.dy,
         cz: o.dz,
-      }))
+      })),
     );
   }, [camera]);
 
   return (
     <>
       {chunks.map((chunk) => (
-        <Chunk key={chunk.key} cx={chunk.cx} cy={chunk.cy} cz={chunk.cz} media={media} cameraGridRef={cameraGridRef} />
+        <Chunk
+          key={chunk.key}
+          cx={chunk.cx}
+          cy={chunk.cy}
+          cz={chunk.cz}
+          media={media}
+          cameraGridRef={cameraGridRef}
+        />
       ))}
     </>
   );
@@ -553,11 +623,14 @@ export function InfiniteCanvasScene({
   cameraFar = 500,
   fogNear = 120,
   fogFar = 320,
-  backgroundColor = "#ffffff",
-  fogColor = "#ffffff",
+  backgroundColor = "#0C090A",
+  fogColor = "#0C090A",
 }: InfiniteCanvasProps) {
   const isTouchDevice = useIsTouchDevice();
-  const dpr = Math.min(window.devicePixelRatio || 1, isTouchDevice ? 1.25 : 1.5);
+  const dpr = Math.min(
+    window.devicePixelRatio || 1,
+    isTouchDevice ? 1.25 : 1.5,
+  );
 
   if (!media.length) {
     return null;
@@ -567,15 +640,23 @@ export function InfiniteCanvasScene({
     <KeyboardControls map={KEYBOARD_MAP}>
       <div className={styles.container}>
         <Canvas
-          camera={{ position: [0, 0, INITIAL_CAMERA_Z], fov: cameraFov, near: cameraNear, far: cameraFar }}
+          camera={{
+            position: [0, 0, INITIAL_CAMERA_Z],
+            fov: cameraFov,
+            near: cameraNear,
+            far: cameraFar,
+          }}
           dpr={dpr}
           flat
           gl={{ antialias: false, powerPreference: "high-performance" }}
           className={styles.canvas}
         >
-          <color attach="background" args={[backgroundColor]} />
-          <fog attach="fog" args={[fogColor, fogNear, fogFar]} />
-          <SceneController media={media} onTextureProgress={onTextureProgress} />
+          <color attach='background' args={[backgroundColor]} />
+          <fog attach='fog' args={[fogColor, fogNear, fogFar]} />
+          <SceneController
+            media={media}
+            onTextureProgress={onTextureProgress}
+          />
           {showFps && <Stats className={styles.stats} />}
         </Canvas>
 
