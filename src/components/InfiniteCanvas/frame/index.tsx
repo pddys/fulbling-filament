@@ -31,8 +31,8 @@ export function Frame() {
         ></div>
         <div className={styles.frame__circle}></div>
       </div>
-      <div className={styles.frame__credits}></div>
-      <nav className={styles.frame__tags}></nav>
+      <div className={styles.frame__credits}>Credits</div>
+      <nav className={styles.frame__tags}>Tags</nav>
     </header>
   );
 }

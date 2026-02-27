@@ -3,6 +3,7 @@ import {
   Stats,
   useKeyboardControls,
   useProgress,
+  Text
 } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as React from "react";
@@ -36,18 +37,6 @@ import {
   getChunkUpdateThrottleMs,
   shouldThrottleUpdate,
 } from "./utils";
-
-const createCardCanvas = (content?: MediaItem["content"]) => {
-  const canvas = document.createElement("canvas");
-  canvas.width = 512;
-  canvas.height = 512;
-  const ctx = canvas.getContext("2d")!;
-
-  ctx.fillStyle = "#000000";
-  ctx.fillRect(0, 0, 512, 512);
-
-  return canvas;
-};
 
 const PLANE_GEOMETRY = new THREE.PlaneGeometry(1, 1);
 
@@ -87,25 +76,12 @@ type CameraGridState = {
   camZ: number;
 };
 
-function MediaPlane({
-  position,
-  scale,
-  media,
-  chunkCx,
-  chunkCy,
-  chunkCz,
-  cameraGridRef,
-}: {
-  position: THREE.Vector3;
-  scale: THREE.Vector3;
-  media: MediaItem;
-  chunkCx: number;
-  chunkCy: number;
-  chunkCz: number;
-  cameraGridRef: React.RefObject<CameraGridState>;
-}) {
+function MediaPlane({ position, scale, media, chunkCx, chunkCy, chunkCz, cameraGridRef }) {
   const meshRef = React.useRef<THREE.Mesh>(null);
   const materialRef = React.useRef<THREE.MeshBasicMaterial>(null);
+  const textRef = React.useRef<any>(null);
+  const artistRef = React.useRef<any>(null);
+  const yearRef = React.useRef<any>(null);
   const localState = React.useRef({ opacity: 0, frame: 0, ready: false });
 
   const [texture, setTexture] = React.useState<THREE.Texture | null>(null);
@@ -116,15 +92,11 @@ function MediaPlane({
     const mesh = meshRef.current;
     const state = localState.current;
 
-    if (!material || !mesh) {
-      return;
-    }
+    if (!material || !mesh) return;
 
     state.frame = (state.frame + 1) & 1;
 
-    if (state.opacity < INVIS_THRESHOLD && !mesh.visible && state.frame === 0) {
-      return;
-    }
+    if (state.opacity < INVIS_THRESHOLD && !mesh.visible && state.frame === 0) return;
 
     const cam = cameraGridRef.current;
     const dist = Math.max(
@@ -139,26 +111,21 @@ function MediaPlane({
       material.opacity = 0;
       material.depthWrite = false;
       mesh.visible = false;
+      if (textRef.current) textRef.current.fillOpacity = 0;
+      if (artistRef.current) artistRef.current.fillOpacity = 0;
+      if (yearRef.current) yearRef.current.fillOpacity = 0;
       return;
     }
 
     const gridFade =
       dist <= RENDER_DISTANCE
         ? 1
-        : Math.max(
-            0,
-            1 - (dist - RENDER_DISTANCE) / Math.max(CHUNK_FADE_MARGIN, 0.0001),
-          );
+        : Math.max(0, 1 - (dist - RENDER_DISTANCE) / Math.max(CHUNK_FADE_MARGIN, 0.0001));
 
     const depthFade =
       absDepth <= DEPTH_FADE_START
         ? 1
-        : Math.max(
-            0,
-            1 -
-              (absDepth - DEPTH_FADE_START) /
-                Math.max(DEPTH_FADE_END - DEPTH_FADE_START, 0.0001),
-          );
+        : Math.max(0, 1 - (absDepth - DEPTH_FADE_START) / Math.max(DEPTH_FADE_END - DEPTH_FADE_START, 0.0001));
 
     const target = Math.min(gridFade, depthFade * depthFade);
 
@@ -171,6 +138,11 @@ function MediaPlane({
     material.opacity = isFullyOpaque ? 1 : state.opacity;
     material.depthWrite = isFullyOpaque;
     mesh.visible = state.opacity > INVIS_THRESHOLD;
+
+    // ✅ After opacity is calculated
+    if (textRef.current) textRef.current.fillOpacity = state.opacity;
+    if (artistRef.current) artistRef.current.fillOpacity = state.opacity;
+    if (yearRef.current) yearRef.current.fillOpacity = state.opacity;
   });
 
   const displayScale = React.useMemo(() => {
@@ -181,7 +153,6 @@ function MediaPlane({
     return scale;
   }, [media.width, media.height, scale]);
 
-  // Load texture - skip for cards
   React.useEffect(() => {
     const state = localState.current;
     state.ready = false;
@@ -195,15 +166,6 @@ function MediaPlane({
       material.map = null;
     }
 
-    // Cards don't need texture loading
-    if (media.type === "card") {
-      state.ready = true;
-      setIsReady(true);
-      setTexture(null); // Set null to trigger canvas creation
-      return;
-    }
-
-    // Only load textures for images
     const tex = getTexture(media, () => {
       state.ready = true;
       setIsReady(true);
@@ -212,49 +174,72 @@ function MediaPlane({
     setTexture(tex);
   }, [media]);
 
-  // Apply texture when ready
   React.useEffect(() => {
     const material = materialRef.current;
     const mesh = meshRef.current;
     const state = localState.current;
 
-    if (!material || !mesh || !isReady || !state.ready) {
-      return;
-    }
+    if (!material || !mesh || !isReady || !state.ready || !texture) return;
 
-    // Handle cards
-    if (media.type === "card") {
-      const canvas = createCardCanvas(media.content);
-      material.map = new THREE.CanvasTexture(canvas);
-      material.opacity = state.opacity;
-      material.depthWrite = state.opacity >= 1;
-      mesh.scale.copy(displayScale);
-      return;
-    }
-
-    // Handle images
-    if (!texture) return;
     material.map = texture;
     material.opacity = state.opacity;
     material.depthWrite = state.opacity >= 1;
     mesh.scale.copy(displayScale);
   }, [displayScale, texture, isReady, media]);
 
+  const textY = -(displayScale.y / 2) - 0.7;
+
   return (
-    <mesh
-      ref={meshRef}
-      position={position}
-      scale={displayScale}
-      visible={false}
-      geometry={PLANE_GEOMETRY}
-    >
-      <meshBasicMaterial
-        ref={materialRef}
-        transparent
-        opacity={0}
-        side={THREE.DoubleSide}
-      />
-    </mesh>
+    <group position={position}>
+      <mesh ref={meshRef} scale={displayScale} visible={false} geometry={PLANE_GEOMETRY}>
+        <meshBasicMaterial ref={materialRef} transparent opacity={0} side={THREE.DoubleSide} />
+      </mesh>
+
+      {media.title && (
+        <Text
+          ref={textRef}
+          position={[0, textY, 0]}
+          fontSize={1.5}
+          maxWidth={displayScale.x}
+          textAlign="center"
+          anchorY="top"
+          color="white"
+          fillOpacity={0}
+        >
+          {media.title}
+        </Text>
+      )}
+
+      {media.artist && (
+        <Text
+          ref={artistRef}
+          position={[0, textY - 0.7, 0]}
+          fontSize={1.05}
+          maxWidth={displayScale.x}
+          textAlign="center"
+          anchorY="top"
+          color="white"
+          fillOpacity={0}
+        >
+          {media.artist}
+        </Text>
+      )}
+
+      {media.year && (
+        <Text
+          ref={yearRef}
+          position={[0, textY - 1.2, 0]}
+          fontSize={0.9}
+          maxWidth={displayScale.x}
+          textAlign="center"
+          anchorY="top"
+          color="#aaaaaa"
+          fillOpacity={0}
+        >
+          {media.year}
+        </Text>
+      )}
+    </group>
   );
 }
 

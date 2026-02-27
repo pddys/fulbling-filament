@@ -8,7 +8,7 @@
   pointer-events: none;
   justify-items: start;
   align-items: center;
-  grid-template-columns: auto auto auto auto 1fr;
+  grid-template-columns: 1fr 1fr;
   color: #fff;
   mix-blend-mode: difference;
   font-family: "TeX Gyre Heros";
@@ -23,7 +23,6 @@
 }
 
 .frame__title {
-  grid-area: title;
   font-family: "TeX Gyre Heros";
   font-size: 1rem;
   font-weight: 400;
@@ -173,25 +172,24 @@
 }
 
 .frame__back {
-  grid-area: back;
+
   justify-self: start;
 }
 
 .frame__archive {
-  grid-area: archive;
+
   justify-self: start;
 }
 
 .frame__github {
-  grid-area: github;
+
 }
 
 .frame__credits {
-  grid-area: credits;
+
 }
 
 .frame__tags {
-  grid-area: tags;
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
@@ -210,18 +208,22 @@
     top: 0;
     left: 0;
     width: 100%;
-    grid-column-gap: 2rem;
-    grid-template-columns: auto auto auto 1fr;
-    grid-template-rows: auto auto auto;
-    align-content: space-between;
-    grid-template-areas:
-      "back github archive ... credits"
-      "title title title title title"
-      "tags tags tags tags sponsor";
+  }
+
+  .frame__circle {
+    width: 18px;
+    height: 18px;
   }
 
   .frame__title {
+    /* position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%); */
+    /* justify-self: center;
+    align-self: start; */
     justify-self: center;
+    align-self: start;
     font-size: clamp(2rem, 5vw, 3rem);
   }
 
@@ -231,6 +233,8 @@
   }
 
   .frame__credits {
-    text-align: right;
+    text-align: center;
+    justify-self: center;
+      align-self: start;
   }
 }
