@@ -3,7 +3,7 @@ import {
   Stats,
   useKeyboardControls,
   useProgress,
-  Text
+  Text,
 } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as React from "react";
@@ -76,7 +76,15 @@ type CameraGridState = {
   camZ: number;
 };
 
-function MediaPlane({ position, scale, media, chunkCx, chunkCy, chunkCz, cameraGridRef }) {
+function MediaPlane({
+  position,
+  scale,
+  media,
+  chunkCx,
+  chunkCy,
+  chunkCz,
+  cameraGridRef,
+}) {
   const meshRef = React.useRef<THREE.Mesh>(null);
   const materialRef = React.useRef<THREE.MeshBasicMaterial>(null);
   const textRef = React.useRef<any>(null);
@@ -96,7 +104,8 @@ function MediaPlane({ position, scale, media, chunkCx, chunkCy, chunkCz, cameraG
 
     state.frame = (state.frame + 1) & 1;
 
-    if (state.opacity < INVIS_THRESHOLD && !mesh.visible && state.frame === 0) return;
+    if (state.opacity < INVIS_THRESHOLD && !mesh.visible && state.frame === 0)
+      return;
 
     const cam = cameraGridRef.current;
     const dist = Math.max(
@@ -120,12 +129,20 @@ function MediaPlane({ position, scale, media, chunkCx, chunkCy, chunkCz, cameraG
     const gridFade =
       dist <= RENDER_DISTANCE
         ? 1
-        : Math.max(0, 1 - (dist - RENDER_DISTANCE) / Math.max(CHUNK_FADE_MARGIN, 0.0001));
+        : Math.max(
+            0,
+            1 - (dist - RENDER_DISTANCE) / Math.max(CHUNK_FADE_MARGIN, 0.0001),
+          );
 
     const depthFade =
       absDepth <= DEPTH_FADE_START
         ? 1
-        : Math.max(0, 1 - (absDepth - DEPTH_FADE_START) / Math.max(DEPTH_FADE_END - DEPTH_FADE_START, 0.0001));
+        : Math.max(
+            0,
+            1 -
+              (absDepth - DEPTH_FADE_START) /
+                Math.max(DEPTH_FADE_END - DEPTH_FADE_START, 0.0001),
+          );
 
     const target = Math.min(gridFade, depthFade * depthFade);
 
@@ -191,54 +208,34 @@ function MediaPlane({ position, scale, media, chunkCx, chunkCy, chunkCz, cameraG
 
   return (
     <group position={position}>
-      <mesh ref={meshRef} scale={displayScale} visible={false} geometry={PLANE_GEOMETRY}>
-        <meshBasicMaterial ref={materialRef} transparent opacity={0} side={THREE.DoubleSide} />
+      <mesh
+        ref={meshRef}
+        scale={displayScale}
+        visible={false}
+        geometry={PLANE_GEOMETRY}
+      >
+        <meshBasicMaterial
+          ref={materialRef}
+          transparent
+          opacity={0}
+          side={THREE.DoubleSide}
+        />
       </mesh>
 
-      {media.title && (
-        <Text
-          ref={textRef}
-          position={[0, textY, 0]}
-          fontSize={1.5}
-          maxWidth={displayScale.x}
-          textAlign="center"
-          anchorY="top"
-          color="white"
-          fillOpacity={0}
-        >
-          {media.title}
-        </Text>
-      )}
-
-      {media.artist && (
-        <Text
-          ref={artistRef}
-          position={[0, textY - 0.7, 0]}
-          fontSize={1.05}
-          maxWidth={displayScale.x}
-          textAlign="center"
-          anchorY="top"
-          color="white"
-          fillOpacity={0}
-        >
-          {media.artist}
-        </Text>
-      )}
-
-      {media.year && (
-        <Text
-          ref={yearRef}
-          position={[0, textY - 1.2, 0]}
-          fontSize={0.9}
-          maxWidth={displayScale.x}
-          textAlign="center"
-          anchorY="top"
-          color="#aaaaaa"
-          fillOpacity={0}
-        >
-          {media.year}
-        </Text>
-      )}
+      <Text
+        ref={textRef}
+        position={[0, textY, 0]}
+        fontSize={1}
+        maxWidth={displayScale.x}
+        textAlign='center'
+        anchorY='top'
+        color='white'
+        fillOpacity={0}
+      >
+        {[media.title, media.artist, media.year && `\n${media.year}`]
+          .filter(Boolean)
+          .join("\n")}
+      </Text>
     </group>
   );
 }

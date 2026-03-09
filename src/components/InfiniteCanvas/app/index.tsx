@@ -3,15 +3,21 @@ import { Frame } from "../frame";
 import { InfiniteCanvas } from "../infinite-canvas";
 import type { MediaItem } from "../infinite-canvas/types";
 import { PageLoader } from "../loader";
+import { preloadFont } from "@react-three/drei";
+
+preloadFont({
+  characters:
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,'-& ",
+});
 
 export function App() {
   const [media, setMedia] = React.useState<MediaItem[]>([]);
   const [textureProgress, setTextureProgress] = React.useState(0);
 
   React.useEffect(() => {
-    fetch('/artworks/manifest.json')
-      .then(res => res.json())
-      .then(data => setMedia(data));
+    fetch("/artworks/manifest.json")
+      .then((res) => res.json())
+      .then((data) => setMedia(data));
   }, []);
 
   if (!media.length) {
