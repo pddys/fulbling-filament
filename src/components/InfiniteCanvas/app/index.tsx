@@ -3,7 +3,7 @@ import { Frame } from "../frame";
 import { InfiniteCanvas } from "../infinite-canvas";
 import type { MediaItem } from "../infinite-canvas/types";
 import { PageLoader } from "../loader";
-import { preloadFont } from "@react-three/drei";
+import { preloadFont } from "troika-three-text";
 
 preloadFont({
   characters:
