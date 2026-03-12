@@ -5,9 +5,17 @@ import type { MediaItem } from "../infinite-canvas/types";
 import { PageLoader } from "../loader";
 import { preloadFont } from "troika-three-text";
 
+const FONT_CHARS =
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,'-& ";
+
 preloadFont({
-  characters:
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,'-& ",
+  font: "/fonts/TeX-Gyre-Heros/texgyreheroscn-bold.otf",
+  characters: FONT_CHARS,
+});
+
+preloadFont({
+  font: "/fonts/TeX-Gyre-Heros/texgyreheroscn-regular.otf",
+  characters: FONT_CHARS,
 });
 
 export function App() {

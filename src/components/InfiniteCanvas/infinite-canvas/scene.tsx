@@ -76,6 +76,22 @@ type CameraGridState = {
   camZ: number;
 };
 
+type PlaneFrameEntry = {
+  meshRef: React.MutableRefObject<THREE.Mesh | null>;
+  materialRef: React.MutableRefObject<THREE.MeshBasicMaterial | null>;
+  textRef: React.MutableRefObject<any>;
+  artistRef: React.MutableRefObject<any>;
+  localState: React.MutableRefObject<{
+    opacity: number;
+    frame: number;
+    ready: boolean;
+  }>;
+  chunkCx: number;
+  chunkCy: number;
+  chunkCz: number;
+  positionZ: number;
+};
+
 function MediaPlane({
   position,
   scale,
@@ -83,84 +99,36 @@ function MediaPlane({
   chunkCx,
   chunkCy,
   chunkCz,
-  cameraGridRef,
+  planeId,
+  planeRegistryRef,
 }) {
   const meshRef = React.useRef<THREE.Mesh>(null);
   const materialRef = React.useRef<THREE.MeshBasicMaterial>(null);
   const textRef = React.useRef<any>(null);
   const artistRef = React.useRef<any>(null);
-  const yearRef = React.useRef<any>(null);
   const localState = React.useRef({ opacity: 0, frame: 0, ready: false });
 
   const [texture, setTexture] = React.useState<THREE.Texture | null>(null);
   const [isReady, setIsReady] = React.useState(false);
 
-  useFrame(() => {
-    const material = materialRef.current;
-    const mesh = meshRef.current;
-    const state = localState.current;
-
-    if (!material || !mesh) return;
-
-    state.frame = (state.frame + 1) & 1;
-
-    if (state.opacity < INVIS_THRESHOLD && !mesh.visible && state.frame === 0)
-      return;
-
-    const cam = cameraGridRef.current;
-    const dist = Math.max(
-      Math.abs(chunkCx - cam.cx),
-      Math.abs(chunkCy - cam.cy),
-      Math.abs(chunkCz - cam.cz),
-    );
-    const absDepth = Math.abs(position.z - cam.camZ);
-
-    if (absDepth > DEPTH_FADE_END + 50) {
-      state.opacity = 0;
-      material.opacity = 0;
-      material.depthWrite = false;
-      mesh.visible = false;
-      if (textRef.current) textRef.current.fillOpacity = 0;
-      if (artistRef.current) artistRef.current.fillOpacity = 0;
-      if (yearRef.current) yearRef.current.fillOpacity = 0;
-      return;
-    }
-
-    const gridFade =
-      dist <= RENDER_DISTANCE
-        ? 1
-        : Math.max(
-            0,
-            1 - (dist - RENDER_DISTANCE) / Math.max(CHUNK_FADE_MARGIN, 0.0001),
-          );
-
-    const depthFade =
-      absDepth <= DEPTH_FADE_START
-        ? 1
-        : Math.max(
-            0,
-            1 -
-              (absDepth - DEPTH_FADE_START) /
-                Math.max(DEPTH_FADE_END - DEPTH_FADE_START, 0.0001),
-          );
-
-    const target = Math.min(gridFade, depthFade * depthFade);
-
-    state.opacity =
-      target < INVIS_THRESHOLD && state.opacity < INVIS_THRESHOLD
-        ? 0
-        : lerp(state.opacity, target, 0.18);
-
-    const isFullyOpaque = state.opacity > 0.99;
-    material.opacity = isFullyOpaque ? 1 : state.opacity;
-    material.depthWrite = isFullyOpaque;
-    mesh.visible = state.opacity > INVIS_THRESHOLD;
-
-    // ✅ After opacity is calculated
-    if (textRef.current) textRef.current.fillOpacity = state.opacity;
-    if (artistRef.current) artistRef.current.fillOpacity = state.opacity;
-    if (yearRef.current) yearRef.current.fillOpacity = state.opacity;
-  });
+  React.useEffect(() => {
+    planeRegistryRef.current.set(planeId, {
+      meshRef,
+      materialRef,
+      textRef,
+      artistRef,
+      localState,
+      chunkCx,
+      chunkCy,
+      chunkCz,
+      positionZ: position.z,
+    });
+    return () => {
+      planeRegistryRef.current.delete(planeId);
+    };
+    // refs and static plane props are stable for the lifetime of this component
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const displayScale = React.useMemo(() => {
     if (media.width && media.height) {
@@ -204,7 +172,10 @@ function MediaPlane({
     mesh.scale.copy(displayScale);
   }, [displayScale, texture, isReady, media]);
 
-  const textY = -(displayScale.y / 2) - 0.7;
+  const [titleHeight, setTitleHeight] = React.useState(1.2);
+  const titleY = -(displayScale.y / 2) - 0.7;
+  const subtitleY = titleY - titleHeight - 0.35;
+  const subtitle = [media.artist, media.year].filter(Boolean).join("\n");
 
   return (
     <group position={position}>
@@ -223,19 +194,41 @@ function MediaPlane({
       </mesh>
 
       <Text
+        font='/fonts/TeX-Gyre-Heros/texgyreheroscn-bold.otf'
         ref={textRef}
-        position={[0, textY, 0]}
+        position={[0, titleY, 0]}
         fontSize={1}
         maxWidth={displayScale.x}
         textAlign='center'
         anchorY='top'
         color='white'
         fillOpacity={0}
+        onSync={(troika) => {
+          const bounds = troika.textRenderInfo?.blockBounds;
+          if (bounds) {
+            const h = bounds[3] - bounds[1];
+            if (h > 0) setTitleHeight(h);
+          }
+        }}
       >
-        {[media.title, media.artist, media.year && `\n${media.year}`]
-          .filter(Boolean)
-          .join("\n")}
+        {media.title}
       </Text>
+
+      {subtitle && (
+        <Text
+          font='/fonts/TeX-Gyre-Heros/texgyreheroscn-regular.otf'
+          ref={artistRef}
+          position={[0, subtitleY, 0]}
+          fontSize={0.65}
+          maxWidth={displayScale.x}
+          textAlign='center'
+          anchorY='top'
+          color='#aaaaaa'
+          fillOpacity={0}
+        >
+          {subtitle}
+        </Text>
+      )}
     </group>
   );
 }
@@ -245,13 +238,13 @@ function Chunk({
   cy,
   cz,
   media,
-  cameraGridRef,
+  planeRegistryRef,
 }: {
   cx: number;
   cy: number;
   cz: number;
   media: MediaItem[];
-  cameraGridRef: React.RefObject<CameraGridState>;
+  planeRegistryRef: React.MutableRefObject<Map<string, PlaneFrameEntry>>;
 }) {
   const [planes, setPlanes] = React.useState<PlaneData[] | null>(null);
 
@@ -292,13 +285,14 @@ function Chunk({
         return (
           <MediaPlane
             key={plane.id}
+            planeId={plane.id}
             position={plane.position}
             scale={plane.scale}
             media={mediaItem}
             chunkCx={cx}
             chunkCy={cy}
             chunkCz={cz}
-            cameraGridRef={cameraGridRef}
+            planeRegistryRef={planeRegistryRef}
           />
         );
       })}
@@ -358,6 +352,9 @@ function SceneController({
     cz: 0,
     camZ: camera.position.z,
   });
+  const planeRegistryRef = React.useRef<Map<string, PlaneFrameEntry>>(
+    new Map(),
+  );
 
   const [chunks, setChunks] = React.useState<ChunkData[]>([]);
 
@@ -559,6 +556,77 @@ function SceneController({
         })),
       );
     }
+
+    // Single loop over all registered planes — replaces per-plane useFrame
+    const cam = cameraGridRef.current;
+    for (const entry of planeRegistryRef.current.values()) {
+      const mesh = entry.meshRef.current;
+      const material = entry.materialRef.current;
+      const planeState = entry.localState.current;
+
+      if (!material || !mesh) continue;
+
+      planeState.frame = (planeState.frame + 1) & 1;
+      if (
+        planeState.opacity < INVIS_THRESHOLD &&
+        !mesh.visible &&
+        planeState.frame === 0
+      )
+        continue;
+
+      const dist = Math.max(
+        Math.abs(entry.chunkCx - cam.cx),
+        Math.abs(entry.chunkCy - cam.cy),
+        Math.abs(entry.chunkCz - cam.cz),
+      );
+      const absDepth = Math.abs(entry.positionZ - cam.camZ);
+
+      if (absDepth > DEPTH_FADE_END + 50) {
+        planeState.opacity = 0;
+        material.opacity = 0;
+        material.depthWrite = false;
+        mesh.visible = false;
+        if (entry.textRef.current) entry.textRef.current.fillOpacity = 0;
+        if (entry.artistRef.current) entry.artistRef.current.fillOpacity = 0;
+        continue;
+      }
+
+      const gridFade =
+        dist <= RENDER_DISTANCE
+          ? 1
+          : Math.max(
+              0,
+              1 -
+                (dist - RENDER_DISTANCE) / Math.max(CHUNK_FADE_MARGIN, 0.0001),
+            );
+
+      const depthFade =
+        absDepth <= DEPTH_FADE_START
+          ? 1
+          : Math.max(
+              0,
+              1 -
+                (absDepth - DEPTH_FADE_START) /
+                  Math.max(DEPTH_FADE_END - DEPTH_FADE_START, 0.0001),
+            );
+
+      const target = Math.min(gridFade, depthFade * depthFade);
+
+      planeState.opacity =
+        target < INVIS_THRESHOLD && planeState.opacity < INVIS_THRESHOLD
+          ? 0
+          : lerp(planeState.opacity, target, 0.18);
+
+      const isFullyOpaque = planeState.opacity > 0.99;
+      material.opacity = isFullyOpaque ? 1 : planeState.opacity;
+      material.depthWrite = isFullyOpaque;
+      mesh.visible = planeState.opacity > INVIS_THRESHOLD;
+
+      if (entry.textRef.current)
+        entry.textRef.current.fillOpacity = planeState.opacity;
+      if (entry.artistRef.current)
+        entry.artistRef.current.fillOpacity = planeState.opacity;
+    }
   });
 
   React.useEffect(() => {
@@ -588,7 +656,7 @@ function SceneController({
           cy={chunk.cy}
           cz={chunk.cz}
           media={media}
-          cameraGridRef={cameraGridRef}
+          planeRegistryRef={planeRegistryRef}
         />
       ))}
     </>
