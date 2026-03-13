@@ -1,38 +1,358 @@
+import * as React from "react";
 import styles from "./style.module.css";
 
-export function Frame() {
+type CamState = {
+  x: number;
+  y: number;
+  z: number;
+  vx: number;
+  vy: number;
+  vz: number;
+};
+
+function useCameraState(): CamState {
+  const [cam, setCam] = React.useState<CamState>({
+    x: 0,
+    y: 0,
+    z: 50,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+  });
+  React.useEffect(() => {
+    const handler = (e: Event) => setCam((e as CustomEvent<CamState>).detail);
+    window.addEventListener("hudCameraUpdate", handler);
+    return () => window.removeEventListener("hudCameraUpdate", handler);
+  }, []);
+  return cam;
+}
+
+function useClock() {
+  const [time, setTime] = React.useState(() =>
+    new Date().toTimeString().slice(0, 8),
+  );
+  React.useEffect(() => {
+    const id = setInterval(
+      () => setTime(new Date().toTimeString().slice(0, 8)),
+      1000,
+    );
+    return () => clearInterval(id);
+  }, []);
+  return time;
+}
+
+function fmt(n: number, dec = 1): string {
+  const sign = n >= 0 ? "+" : "−";
+  return `${sign}${Math.abs(n).toFixed(dec)}`;
+}
+
+function HeadingDial({ heading }: { heading: number }) {
+  const ticks = Array.from({ length: 36 }, (_, i) => {
+    const angle = i * 10;
+    const rad = ((angle - 90) * Math.PI) / 180;
+    const major = angle % 30 === 0;
+    const r0 = major ? 28 : 31;
+    const r1 = 34;
+    return { angle, rad, major, r0, r1 };
+  });
+
+  const needleRad = ((heading - 90) * Math.PI) / 180;
+
   return (
-    <header className={`frame ${styles.frame}`}>
-      <h1 className={styles.frame__title}>Infinite Canvas</h1>
-      <div className={styles.frame__borders}>
-        <div
-          className={`${styles.frame__border} ${styles["frame__border--top-right"]}`}
-        ></div>
-        <div
-          className={`${styles.frame__border} ${styles["frame__border--top-left"]}`}
-        ></div>
-        <div
-          className={`${styles.frame__border} ${styles["frame__border--bottom-right"]}`}
-        ></div>
-        <div
-          className={`${styles.frame__border} ${styles["frame__border--bottom-left"]}`}
-        ></div>
-        <div
-          className={`${styles.frame__border} ${styles["frame__border--top-centre"]}`}
-        ></div>
-        <div
-          className={`${styles.frame__border} ${styles["frame__border--bottom-centre"]}`}
-        ></div>
-        <div
-          className={`${styles.frame__border} ${styles["frame__border--left-centre"]}`}
-        ></div>
-        <div
-          className={`${styles.frame__border} ${styles["frame__border--right-centre"]}`}
-        ></div>
-        <div className={styles.frame__circle}></div>
+    <div className={styles.dialWrap}>
+      <svg
+        width='90'
+        height='90'
+        viewBox='-45 -45 90 90'
+        className={styles.dialSvg}
+      >
+        <circle
+          r='43'
+          fill='none'
+          stroke='currentColor'
+          strokeWidth='0.5'
+          opacity='0.2'
+        />
+        <circle
+          r='36'
+          fill='none'
+          stroke='currentColor'
+          strokeWidth='0.5'
+          opacity='0.1'
+        />
+        {ticks.map((t) => (
+          <line
+            key={t.angle}
+            x1={Math.cos(t.rad) * t.r0}
+            y1={Math.sin(t.rad) * t.r0}
+            x2={Math.cos(t.rad) * t.r1}
+            y2={Math.sin(t.rad) * t.r1}
+            stroke='currentColor'
+            strokeWidth={t.major ? 1 : 0.5}
+            opacity={t.major ? 0.6 : 0.25}
+          />
+        ))}
+        {["N", "E", "S", "W"].map((label, i) => {
+          const rad = ((i * 90 - 90) * Math.PI) / 180;
+          return (
+            <text
+              key={label}
+              x={Math.cos(rad) * 22}
+              y={Math.sin(rad) * 22 + 2}
+              textAnchor='middle'
+              fontSize='6'
+              fill='currentColor'
+              opacity='0.55'
+              fontFamily='inherit'
+            >
+              {label}
+            </text>
+          );
+        })}
+        {/* needle */}
+        <line
+          x1={Math.cos(needleRad) * -10}
+          y1={Math.sin(needleRad) * -10}
+          x2={Math.cos(needleRad) * 28}
+          y2={Math.sin(needleRad) * 28}
+          stroke='currentColor'
+          strokeWidth='1.5'
+          strokeLinecap='round'
+          opacity='0.9'
+        />
+        <circle r='2.5' fill='currentColor' opacity='0.9' />
+        <circle
+          r='5'
+          fill='none'
+          stroke='currentColor'
+          strokeWidth='0.5'
+          opacity='0.4'
+        />
+      </svg>
+      <div className={styles.dialReadout}>
+        {Math.round(heading).toString().padStart(3, "0")}°
       </div>
-      <div className={styles.frame__credits}>Credits</div>
-      <nav className={styles.frame__tags}>Tags</nav>
-    </header>
+    </div>
+  );
+}
+
+const TAPE_HEIGHT = 220; // px — vertical tape
+const TAPE_WIDTH = 220; // px
+const PX_PER_UNIT = 1.2; // screen pixels per world unit
+const TICK_SPACING = 20; // world units between minor ticks
+const MAJOR_EVERY = 5; // every Nth minor tick is major (= 100 world units)
+
+function CompassTape({ x }: { x: number }) {
+  const half = TAPE_WIDTH / 2;
+  const visibleRange = half / PX_PER_UNIT + TICK_SPACING * 2;
+
+  const firstIdx = Math.floor((x - visibleRange) / TICK_SPACING);
+  const lastIdx = Math.ceil((x + visibleRange) / TICK_SPACING);
+
+  const ticks: {
+    idx: number;
+    screenX: number;
+    major: boolean;
+    label: string | null;
+  }[] = [];
+  for (let idx = firstIdx; idx <= lastIdx; idx++) {
+    const worldX = idx * TICK_SPACING;
+    // invert sign so moving right scrolls tape rightward
+    const screenX = half + (x - worldX) * PX_PER_UNIT;
+    if (screenX < -TICK_SPACING || screenX > TAPE_WIDTH + TICK_SPACING)
+      continue;
+    const major = idx % MAJOR_EVERY === 0;
+    const label = major ? String(Math.round(worldX)) : null;
+    ticks.push({ idx, screenX, major, label });
+  }
+
+  return (
+    <div className={styles.compassWrap}>
+      <div className={styles.compassCaret}>▾</div>
+      <div className={styles.compassTrack}>
+        {ticks.map((t) => (
+          <div
+            key={t.idx}
+            className={`${styles.compassTick} ${t.major ? styles.compassMajor : ""}`}
+            style={{ left: `${t.screenX}px` }}
+          >
+            <div className={styles.compassLine} />
+            {t.label && <div className={styles.compassLabel}>{t.label}</div>}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function VerticalTape({ y }: { y: number }) {
+  const half = TAPE_HEIGHT / 2;
+  const visibleRange = half / PX_PER_UNIT + TICK_SPACING * 2;
+
+  const firstIdx = Math.floor((y - visibleRange) / TICK_SPACING);
+  const lastIdx = Math.ceil((y + visibleRange) / TICK_SPACING);
+
+  const ticks: {
+    idx: number;
+    screenY: number;
+    major: boolean;
+    label: string | null;
+  }[] = [];
+  for (let idx = firstIdx; idx <= lastIdx; idx++) {
+    const worldY = idx * TICK_SPACING;
+    // moving up (y increases) scrolls tape upward: smaller top = higher on screen
+    const screenY = half - (y - worldY) * PX_PER_UNIT;
+    if (screenY < -TICK_SPACING || screenY > TAPE_HEIGHT + TICK_SPACING)
+      continue;
+    const major = idx % MAJOR_EVERY === 0;
+    const label = major ? String(Math.round(worldY)) : null;
+    ticks.push({ idx, screenY, major, label });
+  }
+
+  return (
+    <div className={styles.vtapeWrap}>
+      <div className={styles.vtapeCaret}>◂</div>
+      <div className={styles.vtapeTrack}>
+        {ticks.map((t) => (
+          <div
+            key={t.idx}
+            className={`${styles.vtapeTick} ${t.major ? styles.vtapeMajor : ""}`}
+            style={{ top: `${t.screenY}px` }}
+          >
+            <div className={styles.vtapeLine} />
+            {t.label && <div className={styles.vtapeLabel}>{t.label}</div>}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SpeedBar({ speed }: { speed: number }) {
+  const max = 4;
+  const pct = Math.min((speed / max) * 100, 100);
+  return (
+    <div className={styles.speedBar}>
+      <div className={styles.speedLabel}>SPD</div>
+      <div className={styles.speedTrack}>
+        <div className={styles.speedFill} style={{ width: `${pct}%` }} />
+      </div>
+      <div className={styles.speedValue}>{speed.toFixed(2)}</div>
+    </div>
+  );
+}
+
+export function Frame() {
+  const cam = useCameraState();
+  const time = useClock();
+
+  const heading = (((cam.x / 6) % 360) + 360) % 360;
+  const speed = Math.sqrt(cam.vx ** 2 + cam.vy ** 2 + cam.vz ** 2);
+  const gridX = Math.floor(cam.x / 110);
+  const gridY = Math.floor(cam.y / 110);
+  const sectorStr = `${gridX >= 0 ? "+" : ""}${gridX}/${gridY >= 0 ? "+" : ""}${gridY}`;
+
+  return (
+    <div className={styles.hud}>
+      {/* Scan line */}
+      <div className={styles.scanline} />
+
+      {/* Corner brackets */}
+      <div className={`${styles.corner} ${styles.tl}`} />
+      <div className={`${styles.corner} ${styles.tr}`} />
+      <div className={`${styles.corner} ${styles.bl}`} />
+      <div className={`${styles.corner} ${styles.br}`} />
+
+      {/* Edge ticks */}
+      <div className={`${styles.edgeTick} ${styles.tickTop}`} />
+      <div className={`${styles.edgeTick} ${styles.tickBottom}`} />
+      <div className={`${styles.edgeTick} ${styles.tickLeft}`} />
+      <div className={`${styles.edgeTick} ${styles.tickRight}`} />
+
+      {/* Crosshair */}
+      <div className={styles.crosshair}>
+        <div className={`${styles.xhairArm} ${styles.xhairC}`} />
+      </div>
+
+      {/* Top bar */}
+      <div className={styles.topBar}>
+        <div className={styles.topLeft}>
+          <span className={styles.lbl}>SYS</span>
+          <span className={styles.val}>ACTIVE</span>
+          <span className={styles.sep} />
+          <span className={styles.lbl}>MCN</span>
+          <span className={styles.val}>IC-0042</span>
+        </div>
+        <div className={styles.topCenter}>INFINITE CANVAS</div>
+        <div className={styles.topRight}>
+          <span className={styles.lbl}>UTC</span>
+          <span className={styles.val}>{time}</span>
+        </div>
+      </div>
+
+      {/* Left panel */}
+      <div className={styles.leftPanel}>
+        <div className={styles.panelTitle}>COORDINATES</div>
+        <div className={styles.dataRow}>
+          <span className={styles.lbl}>X</span>
+          <span className={`${styles.val} ${styles.mono}`}>{fmt(cam.x)}</span>
+        </div>
+        <div className={styles.dataRow}>
+          <span className={styles.lbl}>Y</span>
+          <span className={`${styles.val} ${styles.mono}`}>{fmt(cam.y)}</span>
+        </div>
+        <div className={styles.panelDivider} />
+        <div className={styles.dataRow}>
+          <span className={styles.lbl}>ALT</span>
+          <span className={`${styles.val} ${styles.mono}`}>
+            {cam.z.toFixed(1)}
+          </span>
+        </div>
+        <div className={styles.dataRow}>
+          <span className={styles.lbl}>GRD</span>
+          <span className={`${styles.val} ${styles.mono}`}>{sectorStr}</span>
+        </div>
+        <div className={styles.panelDivider} />
+        <SpeedBar speed={speed} />
+      </div>
+
+      {/* Right panel */}
+      <div className={styles.rightPanel}>
+        <div className={styles.hiddenMobile}>
+          <HeadingDial heading={heading} />
+        </div>
+        <div className={styles.dataRow}>
+          <span className={styles.lbl}>HDG</span>
+          <span className={`${styles.val} ${styles.mono}`}>
+            {Math.round(heading).toString().padStart(3, "0")}°
+          </span>
+        </div>
+        <div className={styles.panelDivider} />
+        <div className={styles.dataRow}>
+          <span className={styles.lbl}>OBJ</span>
+          <span className={styles.val}>215</span>
+        </div>
+        <div className={styles.dataRow}>
+          <span className={styles.lbl}>SRCH</span>
+          <span className={`${styles.val} ${styles.blink}`}>LOCK</span>
+        </div>
+      </div>
+
+      {/* Right vertical tape — tracks Y */}
+      <VerticalTape y={cam.y} />
+
+      {/* Bottom bar */}
+      <div className={styles.bottomBar}>
+        <div className={styles.bottomLeft}>
+          <span className={styles.lbl}>SECTOR</span>
+          <span className={styles.val}>{sectorStr}</span>
+        </div>
+        <CompassTape x={cam.x} />
+        <div className={styles.bottomRight}>
+          <span className={styles.lbl}>OBJECTS</span>
+          <span className={styles.val}>215</span>
+        </div>
+      </div>
+    </div>
   );
 }

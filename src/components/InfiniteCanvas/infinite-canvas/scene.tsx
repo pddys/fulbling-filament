@@ -332,6 +332,8 @@ const createInitialState = (camZ: number): ControllerState => ({
   pendingChunk: null,
 });
 
+const hudFrame = { count: 0 };
+
 function SceneController({
   media,
   onTextureProgress,
@@ -517,6 +519,22 @@ function SceneController({
       s.basePos.y + s.drift.y,
       s.basePos.z,
     );
+
+    hudFrame.count = (hudFrame.count + 1) % 6;
+    if (hudFrame.count === 0) {
+      window.dispatchEvent(
+        new CustomEvent("hudCameraUpdate", {
+          detail: {
+            x: s.basePos.x,
+            y: s.basePos.y,
+            z: s.basePos.z,
+            vx: s.velocity.x,
+            vy: s.velocity.y,
+            vz: s.velocity.z,
+          },
+        }),
+      );
+    }
 
     s.targetVel.x *= VELOCITY_DECAY;
     s.targetVel.y *= VELOCITY_DECAY;
