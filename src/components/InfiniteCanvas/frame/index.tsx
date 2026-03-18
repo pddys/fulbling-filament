@@ -19,11 +19,54 @@ function useCameraState(): CamState {
     vy: 0,
     vz: 0,
   });
+  const targetRef = React.useRef<CamState>({
+    x: 0,
+    y: 0,
+    z: 50,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+  });
+  const smoothRef = React.useRef<CamState>({
+    x: 0,
+    y: 0,
+    z: 50,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+  });
+  const rafRef = React.useRef<number>(0);
+
   React.useEffect(() => {
-    const handler = (e: Event) => setCam((e as CustomEvent<CamState>).detail);
+    const handler = (e: Event) => {
+      targetRef.current = (e as CustomEvent<CamState>).detail;
+    };
     window.addEventListener("hudCameraUpdate", handler);
-    return () => window.removeEventListener("hudCameraUpdate", handler);
+
+    const LERP = 0.12;
+    function tick() {
+      const t = targetRef.current;
+      const s = smoothRef.current;
+      const next: CamState = {
+        x: s.x + (t.x - s.x) * LERP,
+        y: s.y + (t.y - s.y) * LERP,
+        z: s.z + (t.z - s.z) * LERP,
+        vx: t.vx,
+        vy: t.vy,
+        vz: t.vz,
+      };
+      smoothRef.current = next;
+      setCam(next);
+      rafRef.current = requestAnimationFrame(tick);
+    }
+    rafRef.current = requestAnimationFrame(tick);
+
+    return () => {
+      window.removeEventListener("hudCameraUpdate", handler);
+      cancelAnimationFrame(rafRef.current);
+    };
   }, []);
+
   return cam;
 }
 
@@ -46,17 +89,37 @@ function fmt(n: number, dec = 1): string {
   return `${sign}${Math.abs(n).toFixed(dec)}`;
 }
 
-function HeadingDial({ heading }: { heading: number }) {
-  const ticks = Array.from({ length: 36 }, (_, i) => {
-    const angle = i * 10;
-    const rad = ((angle - 90) * Math.PI) / 180;
-    const major = angle % 30 === 0;
-    const r0 = major ? 28 : 31;
-    const r1 = 34;
-    return { angle, rad, major, r0, r1 };
-  });
+const DIAL_DEG_PER_UNIT = 0.6; // 600 world-units per full revolution
+const DIAL_TICK_SPACING = 20; // world units between minor ticks
+const DIAL_MAJOR_EVERY = 5; // every 5th minor = 100 world units = 60° apart
 
-  const needleRad = ((heading - 90) * Math.PI) / 180;
+function HeadingDial({ x }: { x: number }) {
+  const halfRangeUnits = 185 / DIAL_DEG_PER_UNIT;
+  const firstIdx = Math.floor((x - halfRangeUnits) / DIAL_TICK_SPACING);
+  const lastIdx = Math.ceil((x + halfRangeUnits) / DIAL_TICK_SPACING);
+
+  const ticks: {
+    idx: number;
+    rad: number;
+    major: boolean;
+    r0: number;
+    r1: number;
+    label: string | null;
+  }[] = [];
+  for (let idx = firstIdx; idx <= lastIdx; idx++) {
+    const worldX = idx * DIAL_TICK_SPACING;
+    // lower worldX values sit clockwise (right) of needle, matching compass tape
+    const angleDeg = (x - worldX) * DIAL_DEG_PER_UNIT;
+    if (Math.abs(angleDeg) > 182) continue;
+    const rad = ((angleDeg - 90) * Math.PI) / 180;
+    const major = idx % DIAL_MAJOR_EVERY === 0;
+    const r0 = major ? 27 : 30;
+    const r1 = 34;
+    // only label the front arc (±150°) so text doesn't crowd the back
+    const label =
+      major && Math.abs(angleDeg) <= 150 ? String(Math.round(worldX)) : null;
+    ticks.push({ idx, rad, major, r0, r1, label });
+  }
 
   return (
     <div className={styles.dialWrap}>
@@ -81,40 +144,37 @@ function HeadingDial({ heading }: { heading: number }) {
           opacity='0.1'
         />
         {ticks.map((t) => (
-          <line
-            key={t.angle}
-            x1={Math.cos(t.rad) * t.r0}
-            y1={Math.sin(t.rad) * t.r0}
-            x2={Math.cos(t.rad) * t.r1}
-            y2={Math.sin(t.rad) * t.r1}
-            stroke='currentColor'
-            strokeWidth={t.major ? 1 : 0.5}
-            opacity={t.major ? 0.6 : 0.25}
-          />
+          <g key={t.idx}>
+            <line
+              x1={Math.cos(t.rad) * t.r0}
+              y1={Math.sin(t.rad) * t.r0}
+              x2={Math.cos(t.rad) * t.r1}
+              y2={Math.sin(t.rad) * t.r1}
+              stroke='currentColor'
+              strokeWidth={t.major ? 1 : 0.5}
+              opacity={t.major ? 0.6 : 0.25}
+            />
+            {t.label && (
+              <text
+                x={Math.cos(t.rad) * 21}
+                y={Math.sin(t.rad) * 21 + 2}
+                textAnchor='middle'
+                fontSize='4.5'
+                fill='currentColor'
+                opacity='0.55'
+                fontFamily='inherit'
+              >
+                {t.label}
+              </text>
+            )}
+          </g>
         ))}
-        {["N", "E", "S", "W"].map((label, i) => {
-          const rad = ((i * 90 - 90) * Math.PI) / 180;
-          return (
-            <text
-              key={label}
-              x={Math.cos(rad) * 22}
-              y={Math.sin(rad) * 22 + 2}
-              textAnchor='middle'
-              fontSize='6'
-              fill='currentColor'
-              opacity='0.55'
-              fontFamily='inherit'
-            >
-              {label}
-            </text>
-          );
-        })}
-        {/* needle */}
+        {/* fixed needle at 12 o'clock */}
         <line
-          x1={Math.cos(needleRad) * -10}
-          y1={Math.sin(needleRad) * -10}
-          x2={Math.cos(needleRad) * 28}
-          y2={Math.sin(needleRad) * 28}
+          x1={0}
+          y1={10}
+          x2={0}
+          y2={-28}
           stroke='currentColor'
           strokeWidth='1.5'
           strokeLinecap='round'
@@ -129,9 +189,7 @@ function HeadingDial({ heading }: { heading: number }) {
           opacity='0.4'
         />
       </svg>
-      <div className={styles.dialReadout}>
-        {Math.round(heading).toString().padStart(3, "0")}°
-      </div>
+      <div className={styles.dialReadout}>{Math.round(x)}</div>
     </div>
   );
 }
@@ -168,7 +226,7 @@ function CompassTape({ x }: { x: number }) {
 
   return (
     <div className={styles.compassWrap}>
-      <div className={styles.compassCaret}>▾</div>
+      <div className={styles.compassCaret}></div>
       <div className={styles.compassTrack}>
         {ticks.map((t) => (
           <div
@@ -211,7 +269,8 @@ function VerticalTape({ y }: { y: number }) {
 
   return (
     <div className={styles.vtapeWrap}>
-      <div className={styles.vtapeCaret}>◂</div>
+      <div className={styles.vtapeReadout}>{Math.round(y)}</div>
+      <div className={styles.vtapeCaret}></div>
       <div className={styles.vtapeTrack}>
         {ticks.map((t) => (
           <div
@@ -246,7 +305,6 @@ export function Frame() {
   const cam = useCameraState();
   const time = useClock();
 
-  const heading = (((cam.x / 6) % 360) + 360) % 360;
   const speed = Math.sqrt(cam.vx ** 2 + cam.vy ** 2 + cam.vz ** 2);
   const gridX = Math.floor(cam.x / 110);
   const gridY = Math.floor(cam.y / 110);
@@ -258,7 +316,7 @@ export function Frame() {
       <div className={styles.scanline} />
 
       {/* Corner brackets */}
-      <div className={`${styles.corner} ${styles.tl}`} />
+      <div className={`${styles.corner} ${styles.tl} ${styles.hiddenMobile}`} />
       <div className={`${styles.corner} ${styles.tr}`} />
       <div className={`${styles.corner} ${styles.bl}`} />
       <div className={`${styles.corner} ${styles.br}`} />
@@ -277,14 +335,15 @@ export function Frame() {
       {/* Top bar */}
       <div className={styles.topBar}>
         <div className={styles.topLeft}>
-          <span className={styles.lbl}>SYS</span>
-          <span className={styles.val}>ACTIVE</span>
-          <span className={styles.sep} />
-          <span className={styles.lbl}>MCN</span>
-          <span className={styles.val}>IC-0042</span>
+          <div className={styles.hiddenMobile}>INFINITE CANVAS</div>
         </div>
-        <div className={styles.topCenter}>INFINITE CANVAS</div>
         <div className={styles.topRight}>
+          <div className={styles.dataRow}>
+            <span className={styles.lbl}>HDG</span>
+            <span className={`${styles.val} ${styles.mono}`}>
+              {fmt(cam.x, 0)}
+            </span>
+          </div>
           <span className={styles.lbl}>UTC</span>
           <span className={styles.val}>{time}</span>
         </div>
@@ -317,26 +376,7 @@ export function Frame() {
       </div>
 
       {/* Right panel */}
-      <div className={styles.rightPanel}>
-        <div className={styles.hiddenMobile}>
-          <HeadingDial heading={heading} />
-        </div>
-        <div className={styles.dataRow}>
-          <span className={styles.lbl}>HDG</span>
-          <span className={`${styles.val} ${styles.mono}`}>
-            {Math.round(heading).toString().padStart(3, "0")}°
-          </span>
-        </div>
-        <div className={styles.panelDivider} />
-        <div className={styles.dataRow}>
-          <span className={styles.lbl}>OBJ</span>
-          <span className={styles.val}>215</span>
-        </div>
-        <div className={styles.dataRow}>
-          <span className={styles.lbl}>SRCH</span>
-          <span className={`${styles.val} ${styles.blink}`}>LOCK</span>
-        </div>
-      </div>
+      <div className={styles.rightPanel}></div>
 
       {/* Right vertical tape — tracks Y */}
       <VerticalTape y={cam.y} />

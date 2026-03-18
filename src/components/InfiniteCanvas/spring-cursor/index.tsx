@@ -5,15 +5,11 @@ import {
   useMotionValue,
   useReducedMotion,
   useSpring,
-  useTransform,
-  useVelocity,
 } from "motion/react";
 
 // Spring configs
 const SPRING_OUTER = { stiffness: 38, damping: 11, mass: 1 };
 const SPRING_INNER = { stiffness: 160, damping: 20, mass: 0.4 };
-const SPRING_STRETCH = { stiffness: 90, damping: 16 };
-const SPRING_ROTATE = { stiffness: 60, damping: 14 };
 
 const wrap: React.CSSProperties = {
   position: "fixed",
@@ -30,6 +26,19 @@ function getTouchDist(touches: TouchList): number {
   return Math.sqrt(dx * dx + dy * dy);
 }
 
+// HUD-matching corner bracket reticle.
+// Arms: 22px long (matching .corner size in frame), 8px center gap each side.
+// TL: M -8 -30  L -30 -30  L -30 -8
+// TR: M  8 -30  L  30 -30  L  30 -8
+// BR: M 30  8   L  30  30  L   8 30
+// BL: M -8  30  L -30  30  L -30  8
+const BRACKETS = `
+  M -8 -30 L -30 -30 L -30 -8
+  M  8 -30 L  30 -30 L  30 -8
+  M 30  8  L  30  30 L   8 30
+  M -8  30 L -30  30 L -30  8
+`;
+
 export function SpringCursor() {
   const prefersReduced = useReducedMotion();
 
@@ -37,36 +46,13 @@ export function SpringCursor() {
   const rawX = useMotionValue(-200);
   const rawY = useMotionValue(-200);
 
-  // Outer ring: slow, laggy spring
+  // Outer brackets: slow, laggy spring
   const outerX = useSpring(rawX, SPRING_OUTER);
   const outerY = useSpring(rawY, SPRING_OUTER);
 
-  // Inner dot: fast, snappy spring
+  // Inner crosshair: fast, snappy spring
   const innerX = useSpring(rawX, SPRING_INNER);
   const innerY = useSpring(rawY, SPRING_INNER);
-
-  // Velocity → drag deformation
-  const vx = useVelocity(rawX);
-  const vy = useVelocity(rawY);
-
-  const speed = useTransform([vx, vy], ([dx, dy]) =>
-    Math.sqrt((dx as number) ** 2 + (dy as number) ** 2),
-  );
-
-  // Rotation in direction of travel
-  const rawRotate = useTransform([vx, vy], ([dx, dy]) => {
-    const d = dx as number;
-    const v = dy as number;
-    if (Math.abs(d) < 8 && Math.abs(v) < 8) return 0;
-    return (Math.atan2(v, d) * 180) / Math.PI;
-  });
-  const rotate = useSpring(rawRotate, SPRING_ROTATE);
-
-  // Stretch along travel axis
-  const rawScaleX = useTransform(speed, [0, 480], [1, 2.1]);
-  const rawScaleY = useTransform(speed, [0, 480], [1, 0.52]);
-  const stretchX = useSpring(rawScaleX, SPRING_STRETCH);
-  const stretchY = useSpring(rawScaleY, SPRING_STRETCH);
 
   const [visible, setVisible] = React.useState(false);
   const [hasInteracted, setHasInteracted] = React.useState(false);
@@ -125,38 +111,12 @@ export function SpringCursor() {
 
   return (
     <div style={wrap}>
-      {/* Outer ring — lags behind, stretches and rotates with drag velocity */}
+      {/* Outer corner brackets — lags behind cursor */}
       <motion.div
-        animate={{ opacity: visible ? 0.38 : 0 }}
+        animate={{ opacity: visible ? 1 : 0 }}
         transition={{ duration: 0.45 }}
         style={{
           position: "absolute",
-          width: 60,
-          height: 60,
-          borderRadius: "50%",
-          border: "1px solid #fff",
-          x: outerX,
-          y: outerY,
-          translateX: "-50%",
-          translateY: "-50%",
-          rotate,
-          scaleX: stretchX,
-          scaleY: stretchY,
-          mixBlendMode: "difference",
-          willChange: "transform, opacity",
-        }}
-      />
-
-      {/* Mid ring — follows outer spring, stays circular, gives depth */}
-      <motion.div
-        animate={{ opacity: visible ? 0.1 : 0 }}
-        transition={{ duration: 0.45 }}
-        style={{
-          position: "absolute",
-          width: 110,
-          height: 110,
-          borderRadius: "50%",
-          border: "1px solid #fff",
           x: outerX,
           y: outerY,
           translateX: "-50%",
@@ -164,18 +124,24 @@ export function SpringCursor() {
           mixBlendMode: "difference",
           willChange: "transform, opacity",
         }}
-      />
+      >
+        <svg width="60" height="60" viewBox="-30 -30 60 60">
+          <path
+            d={BRACKETS}
+            stroke="white"
+            strokeWidth="1"
+            fill="none"
+            opacity="0.55"
+          />
+        </svg>
+      </motion.div>
 
-      {/* Inner dot — snappy, tracks cursor closely */}
+      {/* Center crosshair — snappy, tracks cursor closely */}
       <motion.div
         animate={{ opacity: visible ? 1 : 0 }}
         transition={{ duration: 0.18 }}
         style={{
           position: "absolute",
-          width: 5,
-          height: 5,
-          borderRadius: "50%",
-          backgroundColor: "#fff",
           x: innerX,
           y: innerY,
           translateX: "-50%",
@@ -183,13 +149,18 @@ export function SpringCursor() {
           mixBlendMode: "difference",
           willChange: "transform, opacity",
         }}
-      />
+      >
+        <svg width="16" height="16" viewBox="-8 -8 16 16">
+          <line x1="-4" y1="0" x2="4" y2="0" stroke="white" strokeWidth="1" opacity="0.9" />
+          <line x1="0" y1="-4" x2="0" y2="4" stroke="white" strokeWidth="1" opacity="0.9" />
+        </svg>
+      </motion.div>
 
       {/* Gesture hints — appear after 1.4s, vanish on first interaction */}
       <AnimatePresence>
         {!hasInteracted && (
           <motion.div
-            key="hints"
+            key='hints'
             initial={{ opacity: 0 }}
             animate={{
               opacity: 0.3,
@@ -198,7 +169,7 @@ export function SpringCursor() {
             exit={{ opacity: 0, transition: { duration: 0.35 } }}
             style={{
               position: "fixed",
-              bottom: "2.5rem",
+              bottom: "4.5rem",
               left: 0,
               right: 0,
               display: "flex",

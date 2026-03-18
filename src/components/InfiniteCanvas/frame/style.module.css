@@ -271,19 +271,25 @@
 /* ── Left panel ───────────────────────────────────────── */
 .leftPanel {
   position: absolute;
-  left: 36px;
-  top: 50%;
-  transform: translateY(-50%);
+  left: 18px;
+  top: 12px;
+  transform: translateY(0%);
   display: flex;
   flex-direction: column;
   gap: 3px;
-  min-width: 120px;
+  min-width: 70px;
+  @media (min-width: 768px) {
+    left: 48px;
+    top: 50%;
+    transform: translateY(-50%);
+    min-width: 120px;
+  }
 }
 
 /* ── Right panel ──────────────────────────────────────── */
 .rightPanel {
   position: absolute;
-  right: 36px;
+  right: 48px;
   top: 50%;
   transform: translateY(-50%);
   display: flex;
@@ -504,6 +510,13 @@
   gap: 3px;
 }
 
+.vtapeReadout {
+  font-size: 0.48rem;
+  opacity: 0.85;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
 .vtapeCaret {
   font-size: 0.7rem;
   opacity: 0.8;
@@ -514,7 +527,7 @@
   position: relative;
   width: 20px;
   height: 220px;
-  overflow: hidden;
+  clip-path: inset(0 0 0 -9999px);
 }
 
 .vtapeTick {
