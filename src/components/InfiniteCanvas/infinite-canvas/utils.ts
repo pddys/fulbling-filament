@@ -3,8 +3,6 @@ import { hashString, seededRandom } from "../utils";
 import { CHUNK_SIZE } from "./constants";
 import type { PlaneData } from "./types";
 
-export const run = <T>(fn: () => T): T => fn();
-
 const MAX_PLANE_CACHE = 256;
 const planeCache = new Map<string, PlaneData[]>();
 

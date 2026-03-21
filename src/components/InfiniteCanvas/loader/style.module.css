@@ -41,7 +41,3 @@
   mask: conic-gradient(#000 var(--progress), transparent 0);
   -webkit-mask: conic-gradient(#000 var(--progress), transparent 0);
 }
-
-.progressBarFill {
-  display: none;
-}

@@ -4,43 +4,19 @@
   inset: 0;
   z-index: 1000;
   pointer-events: none;
-  color: #00ff9f;
   color: #ffffff;
   font-family: "Courier New", "Lucida Console", ui-monospace, monospace;
   font-size: 0.6rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   text-shadow: 0 0 6px currentColor;
-}
-
-/* ── Scan line ────────────────────────────────────────── */
-@keyframes scan {
-  0% {
-    transform: translateY(-100%);
-  }
-  100% {
-    transform: translateY(100dvh);
-  }
+  mix-blend-mode: difference;
 }
 
 .hiddenMobile {
   @media (max-width: 768px) {
     display: none;
   }
-}
-
-.scanline {
-  position: absolute;
-  inset: 0;
-  height: 3px;
-  background: linear-gradient(
-    transparent 0%,
-    currentColor 50%,
-    transparent 100%
-  );
-  animation: scan 7s linear infinite;
-  opacity: 0.03;
-  pointer-events: none;
 }
 
 /* ── Corner brackets ──────────────────────────────────── */
@@ -180,67 +156,13 @@
   transform: translate(-50%, -50%);
 }
 
-/* horizontal arms — 12px gap each side, 32px long */
-.xhairL {
-  width: 32px;
-  height: 1px;
-  top: 0;
-  right: 12px;
-  transform: translateY(-50%);
-}
-.xhairR {
-  width: 32px;
-  height: 1px;
-  top: 0;
-  left: 12px;
-  transform: translateY(-50%);
-}
-.xhairT {
-  height: 32px;
-  width: 1px;
-  left: 0;
-  bottom: 12px;
-  transform: translateX(-50%);
-}
-.xhairB {
-  height: 32px;
-  width: 1px;
-  left: 0;
-  top: 12px;
-  transform: translateX(-50%);
-}
 .xhairC {
   height: 2px;
   width: 56px;
   left: 0;
   top: 0;
   transform: translate(-50%, -50%);
-  background: linear-gradient(
-    90deg,
-    red,
-    #ff9a00 10%,
-    #d0de21,
-    #4fdc4a,
-    #3fdad8,
-    #2fc9e2,
-    #1c7fee,
-    #5f15f2,
-    #ba0cf8,
-    #fb07d9 90%,
-    red
-  );
-}
-
-.xhairRing {
-  position: absolute;
-  width: 18px;
-  height: 18px;
-  border: 1px solid currentColor;
-  border-radius: 50%;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  opacity: 0.55;
+  background: var(--gradient-rainbow);
 }
 
 /* ── Top bar ──────────────────────────────────────────── */
@@ -260,12 +182,6 @@
   display: flex;
   align-items: center;
   gap: 6px;
-}
-
-.topCenter {
-  font-size: 0.68rem;
-  letter-spacing: 0.22em;
-  opacity: 0.5;
 }
 
 /* ── Left panel ───────────────────────────────────────── */

@@ -9,6 +9,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as React from "react";
 import * as THREE from "three";
 import { useIsTouchDevice } from "../use-is-touch-device";
+import { hudBridge } from "../hud-bridge";
 import { clamp, lerp } from "../utils";
 import {
   CHUNK_FADE_MARGIN,
@@ -92,7 +93,7 @@ type PlaneFrameEntry = {
   positionZ: number;
 };
 
-function MediaPlane({
+const MediaPlane = React.memo(function MediaPlane({
   position,
   scale,
   media,
@@ -107,9 +108,6 @@ function MediaPlane({
   const textRef = React.useRef<any>(null);
   const artistRef = React.useRef<any>(null);
   const localState = React.useRef({ opacity: 0, frame: 0, ready: false });
-
-  const [texture, setTexture] = React.useState<THREE.Texture | null>(null);
-  const [isReady, setIsReady] = React.useState(false);
 
   React.useEffect(() => {
     planeRegistryRef.current.set(planeId, {
@@ -138,11 +136,14 @@ function MediaPlane({
     return scale;
   }, [media.width, media.height, scale]);
 
+  // Keep a ref to the latest displayScale so texture-load callbacks can use it
+  const displayScaleRef = React.useRef(displayScale);
+  displayScaleRef.current = displayScale;
+
   React.useEffect(() => {
     const state = localState.current;
     state.ready = false;
     state.opacity = 0;
-    setIsReady(false);
 
     const material = materialRef.current;
     if (material) {
@@ -151,26 +152,25 @@ function MediaPlane({
       material.map = null;
     }
 
-    const tex = getTexture(media, () => {
+    getTexture(media, (loadedTex) => {
       state.ready = true;
-      setIsReady(true);
+      const mat = materialRef.current;
+      const mesh = meshRef.current;
+      if (mat && mesh) {
+        mat.map = loadedTex;
+        mesh.scale.copy(displayScaleRef.current);
+      }
     });
-
-    setTexture(tex);
   }, [media]);
 
+  // Apply updated scale to mesh imperatively when aspect ratio is resolved
   React.useEffect(() => {
-    const material = materialRef.current;
+    displayScaleRef.current = displayScale;
     const mesh = meshRef.current;
-    const state = localState.current;
-
-    if (!material || !mesh || !isReady || !state.ready || !texture) return;
-
-    material.map = texture;
-    material.opacity = state.opacity;
-    material.depthWrite = state.opacity >= 1;
-    mesh.scale.copy(displayScale);
-  }, [displayScale, texture, isReady, media]);
+    if (mesh && localState.current.ready) {
+      mesh.scale.copy(displayScale);
+    }
+  }, [displayScale]);
 
   const [titleHeight, setTitleHeight] = React.useState(1.2);
   const titleY = -(displayScale.y / 2) - 0.7;
@@ -231,7 +231,7 @@ function MediaPlane({
       )}
     </group>
   );
-}
+});
 
 function Chunk({
   cx,
@@ -522,18 +522,14 @@ function SceneController({
 
     hudFrame.count = (hudFrame.count + 1) % 6;
     if (hudFrame.count === 0) {
-      window.dispatchEvent(
-        new CustomEvent("hudCameraUpdate", {
-          detail: {
-            x: s.basePos.x,
-            y: s.basePos.y,
-            z: s.basePos.z,
-            vx: s.velocity.x,
-            vy: s.velocity.y,
-            vz: s.velocity.z,
-          },
-        }),
-      );
+      hudBridge.onUpdate?.({
+        x: s.basePos.x,
+        y: s.basePos.y,
+        z: s.basePos.z,
+        vx: s.velocity.x,
+        vy: s.velocity.y,
+        vz: s.velocity.z,
+      });
     }
 
     s.targetVel.x *= VELOCITY_DECAY;
@@ -629,6 +625,8 @@ function SceneController({
             );
 
       const target = Math.min(gridFade, depthFade * depthFade);
+
+      if (Math.abs(material.opacity - target) < 0.001) continue;
 
       planeState.opacity =
         target < INVIS_THRESHOLD && planeState.opacity < INVIS_THRESHOLD

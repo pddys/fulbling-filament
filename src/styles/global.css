@@ -9,6 +9,7 @@
   --color-link: #fff;
   --color-link-hover: #fff;
   --page-padding: 1.5rem;
+  --gradient-rainbow: linear-gradient(90deg, red, #ff9a00 10%, #d0de21, #4fdc4a, #3fdad8, #2fc9e2, #1c7fee, #5f15f2, #ba0cf8, #fb07d9 90%, red);
   --color-loader-bg: #ffffff;
   --color-loader-bar-bg: rgba(101, 82, 60, 0.1);
   --color-loader-bar-fill: rgb(101, 82, 60);

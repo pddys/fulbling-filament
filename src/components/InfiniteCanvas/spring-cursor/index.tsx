@@ -8,7 +8,6 @@ import {
 } from "motion/react";
 
 // Spring configs
-const SPRING_OUTER = { stiffness: 38, damping: 11, mass: 1 };
 const SPRING_INNER = { stiffness: 160, damping: 20, mass: 0.4 };
 
 const wrap: React.CSSProperties = {
@@ -26,18 +25,6 @@ function getTouchDist(touches: TouchList): number {
   return Math.sqrt(dx * dx + dy * dy);
 }
 
-// HUD-matching corner bracket reticle.
-// Arms: 22px long (matching .corner size in frame), 8px center gap each side.
-// TL: M -8 -30  L -30 -30  L -30 -8
-// TR: M  8 -30  L  30 -30  L  30 -8
-// BR: M 30  8   L  30  30  L   8 30
-// BL: M -8  30  L -30  30  L -30  8
-const BRACKETS = `
-  M -8 -30 L -30 -30 L -30 -8
-  M  8 -30 L  30 -30 L  30 -8
-  M 30  8  L  30  30 L   8 30
-  M -8  30 L -30  30 L -30  8
-`;
 
 export function SpringCursor() {
   const prefersReduced = useReducedMotion();
@@ -45,10 +32,6 @@ export function SpringCursor() {
   // Raw cursor position
   const rawX = useMotionValue(-200);
   const rawY = useMotionValue(-200);
-
-  // Outer brackets: slow, laggy spring
-  const outerX = useSpring(rawX, SPRING_OUTER);
-  const outerY = useSpring(rawY, SPRING_OUTER);
 
   // Inner crosshair: fast, snappy spring
   const innerX = useSpring(rawX, SPRING_INNER);
@@ -111,50 +94,35 @@ export function SpringCursor() {
 
   return (
     <div style={wrap}>
-      {/* Outer corner brackets — lags behind cursor */}
+      {/* Full-viewport crosshair lines — snappy, tracks cursor closely */}
       <motion.div
-        animate={{ opacity: visible ? 1 : 0 }}
-        transition={{ duration: 0.45 }}
+        animate={{ opacity: visible ? 0.05 : 0 }}
+        transition={{ duration: 0.45, delay: visible ? 0.3 : 0 }}
         style={{
           position: "absolute",
-          x: outerX,
-          y: outerY,
-          translateX: "-50%",
-          translateY: "-50%",
-          mixBlendMode: "difference",
-          willChange: "transform, opacity",
-        }}
-      >
-        <svg width="60" height="60" viewBox="-30 -30 60 60">
-          <path
-            d={BRACKETS}
-            stroke="white"
-            strokeWidth="1"
-            fill="none"
-            opacity="0.55"
-          />
-        </svg>
-      </motion.div>
-
-      {/* Center crosshair — snappy, tracks cursor closely */}
-      <motion.div
-        animate={{ opacity: visible ? 1 : 0 }}
-        transition={{ duration: 0.18 }}
-        style={{
-          position: "absolute",
+          top: 0,
+          bottom: 0,
+          width: 1,
           x: innerX,
-          y: innerY,
-          translateX: "-50%",
-          translateY: "-50%",
+          background: "white",
           mixBlendMode: "difference",
           willChange: "transform, opacity",
         }}
-      >
-        <svg width="16" height="16" viewBox="-8 -8 16 16">
-          <line x1="-4" y1="0" x2="4" y2="0" stroke="white" strokeWidth="1" opacity="0.9" />
-          <line x1="0" y1="-4" x2="0" y2="4" stroke="white" strokeWidth="1" opacity="0.9" />
-        </svg>
-      </motion.div>
+      />
+      <motion.div
+        animate={{ opacity: visible ? 0.05 : 0 }}
+        transition={{ duration: 0.45, delay: visible ? 0.3 : 0 }}
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          height: 1,
+          y: innerY,
+          background: "white",
+          mixBlendMode: "difference",
+          willChange: "transform, opacity",
+        }}
+      />
 
       {/* Gesture hints — appear after 1.4s, vanish on first interaction */}
       <AnimatePresence>

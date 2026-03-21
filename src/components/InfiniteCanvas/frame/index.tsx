@@ -1,14 +1,8 @@
 import * as React from "react";
+import { hudBridge } from "../hud-bridge";
+import type { CamState } from "../hud-bridge";
+import { CHUNK_SIZE } from "../infinite-canvas/constants";
 import styles from "./style.module.css";
-
-type CamState = {
-  x: number;
-  y: number;
-  z: number;
-  vx: number;
-  vy: number;
-  vz: number;
-};
 
 function useCameraState(): CamState {
   const [cam, setCam] = React.useState<CamState>({
@@ -38,10 +32,9 @@ function useCameraState(): CamState {
   const rafRef = React.useRef<number>(0);
 
   React.useEffect(() => {
-    const handler = (e: Event) => {
-      targetRef.current = (e as CustomEvent<CamState>).detail;
+    hudBridge.onUpdate = (state) => {
+      targetRef.current = state;
     };
-    window.addEventListener("hudCameraUpdate", handler);
 
     const LERP = 0.12;
     function tick() {
@@ -62,7 +55,7 @@ function useCameraState(): CamState {
     rafRef.current = requestAnimationFrame(tick);
 
     return () => {
-      window.removeEventListener("hudCameraUpdate", handler);
+      hudBridge.onUpdate = null;
       cancelAnimationFrame(rafRef.current);
     };
   }, []);
@@ -89,6 +82,7 @@ function fmt(n: number, dec = 1): string {
   return `${sign}${Math.abs(n).toFixed(dec)}`;
 }
 
+/* ── HUD tuning ── */
 const DIAL_DEG_PER_UNIT = 0.6; // 600 world-units per full revolution
 const DIAL_TICK_SPACING = 20; // world units between minor ticks
 const DIAL_MAJOR_EVERY = 5; // every 5th minor = 100 world units = 60° apart
@@ -194,6 +188,7 @@ function HeadingDial({ x }: { x: number }) {
   );
 }
 
+/* ── HUD tuning ── */
 const TAPE_HEIGHT = 220; // px — vertical tape
 const TAPE_WIDTH = 220; // px
 const PX_PER_UNIT = 1.2; // screen pixels per world unit
@@ -306,15 +301,12 @@ export function Frame() {
   const time = useClock();
 
   const speed = Math.sqrt(cam.vx ** 2 + cam.vy ** 2 + cam.vz ** 2);
-  const gridX = Math.floor(cam.x / 110);
-  const gridY = Math.floor(cam.y / 110);
+  const gridX = Math.floor(cam.x / CHUNK_SIZE);
+  const gridY = Math.floor(cam.y / CHUNK_SIZE);
   const sectorStr = `${gridX >= 0 ? "+" : ""}${gridX}/${gridY >= 0 ? "+" : ""}${gridY}`;
 
   return (
     <div className={styles.hud}>
-      {/* Scan line */}
-      <div className={styles.scanline} />
-
       {/* Corner brackets */}
       <div className={`${styles.corner} ${styles.tl} ${styles.hiddenMobile}`} />
       <div className={`${styles.corner} ${styles.tr}`} />
