@@ -1,4 +1,5 @@
 import * as React from "react";
+import { AboutModal } from "../about";
 import { Frame } from "../frame";
 import { InfiniteCanvas } from "../infinite-canvas";
 import type { MediaItem } from "../infinite-canvas/types";
@@ -36,6 +37,7 @@ export function App() {
   return (
     <>
       <Frame />
+      <AboutModal />
       <PageLoader progress={textureProgress} />
       <InfiniteCanvas media={media} onTextureProgress={setTextureProgress} />
       <SpringCursor />
