@@ -4,7 +4,6 @@ import { Frame } from "../frame";
 import { InfiniteCanvas } from "../infinite-canvas";
 import type { MediaItem } from "../infinite-canvas/types";
 import { PageLoader } from "../loader";
-import { SpringCursor } from "../spring-cursor";
 import { preloadFont } from "troika-three-text";
 
 const FONT_CHARS =
@@ -40,7 +39,6 @@ export function App() {
       <AboutModal />
       <PageLoader progress={textureProgress} />
       <InfiniteCanvas media={media} onTextureProgress={setTextureProgress} />
-      <SpringCursor />
     </>
   );
 }

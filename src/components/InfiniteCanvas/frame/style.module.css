@@ -325,8 +325,22 @@
   position: absolute;
   inset-block: 0;
   left: 0;
-  background: currentColor;
-  opacity: 1;
+  background: linear-gradient(
+    90deg,
+    red,
+    #ff9a00 10%,
+    #d0de21,
+    #4fdc4a,
+    #3fdad8,
+    #2fc9e2,
+    #1c7fee,
+    #5f15f2,
+    #ba0cf8,
+    #fb07d9 90%,
+    red
+  );
+  background-size: 60px 100%;
+  opacity: 0.85;
   border-radius: 2px;
   transition: width 0.1s ease-out;
 }
