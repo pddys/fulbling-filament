@@ -41,6 +41,9 @@ import {
 
 const PLANE_GEOMETRY = new THREE.PlaneGeometry(1, 1);
 
+const FirstTextureContext = React.createContext<(() => void) | null>(null);
+const TextColorContext = React.createContext<{ textColor: string; subtitleColor: string }>({ textColor: 'black', subtitleColor: '#444444' });
+
 const KEYBOARD_MAP = [
   { name: "forward", keys: ["w", "W", "ArrowUp"] },
   { name: "backward", keys: ["s", "S", "ArrowDown"] },
@@ -108,6 +111,8 @@ const MediaPlane = React.memo(function MediaPlane({
   const textRef = React.useRef<any>(null);
   const artistRef = React.useRef<any>(null);
   const localState = React.useRef({ opacity: 0, frame: 0, ready: false });
+  const onFirstTextureLoaded = React.useContext(FirstTextureContext);
+  const { textColor, subtitleColor } = React.useContext(TextColorContext);
 
   React.useEffect(() => {
     planeRegistryRef.current.set(planeId, {
@@ -154,6 +159,7 @@ const MediaPlane = React.memo(function MediaPlane({
 
     getTexture(media, (loadedTex) => {
       state.ready = true;
+      onFirstTextureLoaded?.();
       const mat = materialRef.current;
       const mesh = meshRef.current;
       if (mat && mesh) {
@@ -201,7 +207,7 @@ const MediaPlane = React.memo(function MediaPlane({
         maxWidth={displayScale.x}
         textAlign='center'
         anchorY='top'
-        color='white'
+        color={textColor}
         fillOpacity={0}
         onSync={(troika) => {
           const bounds = troika.textRenderInfo?.blockBounds;
@@ -223,7 +229,7 @@ const MediaPlane = React.memo(function MediaPlane({
           maxWidth={displayScale.x}
           textAlign='center'
           anchorY='top'
-          color='#aaaaaa'
+          color={subtitleColor}
           fillOpacity={0}
         >
           {subtitle}
@@ -337,9 +343,15 @@ const hudFrame = { count: 0 };
 function SceneController({
   media,
   onTextureProgress,
+  onFirstTextureLoaded,
+  textColor,
+  subtitleColor,
 }: {
   media: MediaItem[];
   onTextureProgress?: (progress: number) => void;
+  onFirstTextureLoaded?: () => void;
+  textColor?: string;
+  subtitleColor?: string;
 }) {
   const { camera, gl } = useThree();
   const isTouchDevice = useIsTouchDevice();
@@ -362,6 +374,12 @@ function SceneController({
 
   const { progress } = useProgress();
   const maxProgress = React.useRef(0);
+  const firstTextureCalledRef = React.useRef(false);
+
+  React.useEffect(() => {
+    maxProgress.current = 0;
+    firstTextureCalledRef.current = false;
+  }, [media]);
 
   React.useEffect(() => {
     const rounded = Math.round(progress);
@@ -663,8 +681,13 @@ function SceneController({
     );
   }, [camera]);
 
+  const textColorValue = React.useMemo(
+    () => ({ textColor: textColor ?? 'black', subtitleColor: subtitleColor ?? '#444444' }),
+    [textColor, subtitleColor]
+  );
+
   return (
-    <>
+    <TextColorContext.Provider value={textColorValue}>
       {chunks.map((chunk) => (
         <Chunk
           key={chunk.key}
@@ -675,13 +698,14 @@ function SceneController({
           planeRegistryRef={planeRegistryRef}
         />
       ))}
-    </>
+    </TextColorContext.Provider>
   );
 }
 
 export function InfiniteCanvasScene({
   media,
   onTextureProgress,
+  onFirstTextureLoaded,
   showFps = false,
   showControls = false,
   cameraFov = 60,
@@ -689,8 +713,10 @@ export function InfiniteCanvasScene({
   cameraFar = 500,
   fogNear = 120,
   fogFar = 320,
-  backgroundColor = "#0C090A",
-  fogColor = "#0C090A",
+  backgroundColor = "#ffffff",
+  fogColor = "#ffffff",
+  textColor = "black",
+  subtitleColor = "#444444",
 }: InfiniteCanvasProps) {
   const isTouchDevice = useIsTouchDevice();
   const dpr = Math.min(
@@ -719,10 +745,15 @@ export function InfiniteCanvasScene({
         >
           <color attach='background' args={[backgroundColor]} />
           <fog attach='fog' args={[fogColor, fogNear, fogFar]} />
-          <SceneController
-            media={media}
-            onTextureProgress={onTextureProgress}
-          />
+          <FirstTextureContext.Provider value={onFirstTextureLoaded ?? null}>
+            <SceneController
+              media={media}
+              onTextureProgress={onTextureProgress}
+              onFirstTextureLoaded={onFirstTextureLoaded}
+              textColor={textColor}
+              subtitleColor={subtitleColor}
+            />
+          </FirstTextureContext.Provider>
           {showFps && <Stats className={styles.stats} />}
         </Canvas>
 

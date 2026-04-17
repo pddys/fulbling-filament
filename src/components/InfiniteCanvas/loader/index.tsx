@@ -53,7 +53,7 @@ export function PageLoader({ progress }: { progress: number }) {
 
   return (
     <div className={`${styles.overlay} ${isHidden ? styles.hidden : styles.visible}`}>
-      <div 
+      <div
         className={styles.progressBarContainer}
         style={{ '--progress': `${visualProgress}%` } as React.CSSProperties}
       />

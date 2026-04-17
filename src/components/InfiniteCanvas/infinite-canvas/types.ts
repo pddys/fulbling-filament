@@ -15,6 +15,7 @@ type MediaItem = {
 export type InfiniteCanvasProps = {
   media: MediaItem[];
   onTextureProgress?: (progress: number) => void;
+  onFirstTextureLoaded?: () => void;
   showFps?: boolean;
   showControls?: boolean;
   cameraFov?: number;
@@ -24,6 +25,8 @@ export type InfiniteCanvasProps = {
   fogFar?: number;
   backgroundColor?: string;
   fogColor?: string;
+  textColor?: string;
+  subtitleColor?: string;
 };
 
 export type ChunkData = {

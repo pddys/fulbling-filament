@@ -14,18 +14,15 @@ export function AboutModal() {
   return (
     <>
       <button className={styles.trigger} onClick={open} aria-label="About">
-        ABOUT
+        About
       </button>
 
       <dialog ref={dialogRef} className={styles.dialog} onClick={handleBackdropClick}>
         <div className={styles.panel}>
-          <div className={`${styles.corner} ${styles.tl}`} />
-          <div className={`${styles.corner} ${styles.tr}`} />
-          <div className={`${styles.corner} ${styles.bl}`} />
-          <div className={`${styles.corner} ${styles.br}`} />
-
-          <div className={styles.panelTitle}>INFINITE CANVAS</div>
-          <div className={styles.divider} />
+          <div className={styles.header}>
+            <div className={styles.panelTitle}>Infinite Canvas</div>
+            <button className={styles.closeBtn} onClick={close} aria-label="Close">✕</button>
+          </div>
 
           <p className={styles.body}>
             A procedurally generated gallery of 215 works rendered across an
@@ -34,31 +31,24 @@ export function AboutModal() {
           </p>
 
           <div className={styles.divider} />
-          <div className={styles.sectionTitle}>NAVIGATION</div>
-          <div className={styles.divider} />
+          <div className={styles.sectionTitle}>Navigation</div>
 
           <div className={styles.dataRow}>
-            <span className={styles.lbl}>DRAG / WASD</span>
-            <span className={styles.val}>PAN</span>
+            <span className={styles.lbl}>Drag / WASD</span>
+            <span className={styles.val}>Pan</span>
           </div>
           <div className={styles.dataRow}>
-            <span className={styles.lbl}>SCROLL</span>
-            <span className={styles.val}>ZOOM</span>
+            <span className={styles.lbl}>Scroll</span>
+            <span className={styles.val}>Zoom</span>
           </div>
           <div className={styles.dataRow}>
             <span className={styles.lbl}>Q / E</span>
-            <span className={styles.val}>ALTITUDE</span>
+            <span className={styles.val}>Altitude</span>
           </div>
           <div className={styles.dataRow}>
-            <span className={styles.lbl}>PINCH</span>
-            <span className={styles.val}>ZOOM (TOUCH)</span>
+            <span className={styles.lbl}>Pinch</span>
+            <span className={styles.val}>Zoom (touch)</span>
           </div>
-
-          <div className={styles.divider} />
-
-          <button className={styles.closeBtn} onClick={close}>
-            CLOSE
-          </button>
         </div>
       </dialog>
     </>

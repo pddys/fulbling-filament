@@ -1,39 +1,22 @@
-/* ── Shared tokens ───────────────────────────────────────── */
-:root {
-  --about-font: "Courier New", "Lucida Console", ui-monospace, monospace;
-}
-
 /* ── Trigger button ──────────────────────────────────────── */
 .trigger {
-  position: fixed;
-  right: 48px;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 1001;
-
   background: none;
   border: none;
-  padding: 0;
+  padding: 5px 10px;
   cursor: pointer;
+  border-radius: 6px;
 
-  color: #ffffff;
-  font-family: "Courier New", "Lucida Console", ui-monospace, monospace;
-  font-size: 0.6rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  text-shadow: 0 0 6px currentColor;
-  mix-blend-mode: difference;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
 
-  opacity: 0.45;
-  transition: opacity 0.15s;
-
-  @media (max-width: 768px) {
-    display: none;
-  }
+  transition: background 0.1s, color 0.1s;
 }
 
 .trigger:hover {
-  opacity: 0.9;
+  background: var(--color-ui-hover);
+  color: var(--color-text);
 }
 
 /* ── Dialog ──────────────────────────────────────────────── */
@@ -47,132 +30,96 @@
 }
 
 .dialog::backdrop {
-  background: rgba(0, 0, 0, 0.72);
-  backdrop-filter: blur(2px);
+  background: var(--color-modal-backdrop);
+  backdrop-filter: blur(4px);
 }
 
 /* ── Panel ───────────────────────────────────────────────── */
 .panel {
   position: relative;
-  padding: 24px;
-  min-width: 260px;
-  max-width: 380px;
+  padding: 20px 24px 24px;
+  min-width: 280px;
+  max-width: 360px;
 
-  color: #ffffff;
-  font-family: "Courier New", "Lucida Console", ui-monospace, monospace;
-  font-size: 0.6rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  text-shadow: 0 0 6px currentColor;
+  background: var(--color-modal-bg);
+  border: 1px solid var(--color-modal-border);
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
 
-  background: rgba(0, 0, 0, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-family: system-ui, -apple-system, sans-serif;
+  color: var(--color-text);
 }
 
-/* ── Corner brackets ─────────────────────────────────────── */
-.corner {
-  position: absolute;
-  width: 14px;
-  height: 14px;
-  border: 1px solid currentColor;
-  opacity: 0.5;
-}
-
-.tl {
-  top: 8px;
-  left: 8px;
-  border-width: 1px 0 0 1px;
-}
-.tr {
-  top: 8px;
-  right: 8px;
-  border-width: 1px 1px 0 0;
-}
-.bl {
-  bottom: 8px;
-  left: 8px;
-  border-width: 0 0 1px 1px;
-}
-.br {
-  bottom: 8px;
-  right: 8px;
-  border-width: 0 1px 1px 0;
+/* ── Header ──────────────────────────────────────────────── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
 }
 
 /* ── Typography ──────────────────────────────────────────── */
 .panelTitle {
-  font-size: 1.25rem;
+  font-size: 0.9375rem;
   font-weight: 600;
-  letter-spacing: 0.18em;
-  opacity: 0.9;
-  margin-bottom: 10px;
+  letter-spacing: -0.01em;
+  color: var(--color-text);
 }
 
 .sectionTitle {
-  font-size: 1.25rem;
-  letter-spacing: 0.18em;
-  opacity: 0.35;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--color-text-muted);
   margin-bottom: 8px;
 }
 
 .divider {
   height: 1px;
-  background: currentColor;
-  opacity: 0.12;
-  margin: 8px 0;
+  background: var(--color-modal-border);
+  margin: 16px 0;
 }
 
 .body {
-  font-size: 1rem;
-  line-height: 1.9;
-  letter-spacing: 0.08em;
-  opacity: 0.65;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: var(--color-text-muted);
   margin: 0;
-  text-transform: none;
 }
 
 .dataRow {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 3px 0;
+  justify-content: space-between;
+  padding: 5px 0;
 }
 
 .lbl {
-  opacity: 0.35;
-  font-size: 0.52rem;
-  letter-spacing: 0.12em;
-  min-width: 9ch;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
 }
 
 .val {
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  opacity: 0.85;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text);
 }
 
 /* ── Close button ────────────────────────────────────────── */
 .closeBtn {
-  margin-top: 10px;
   background: none;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  padding: 5px 12px;
+  border: none;
+  padding: 4px;
+  margin: -4px;
   cursor: pointer;
+  line-height: 1;
 
-  color: #ffffff;
-  font-family: "Courier New", "Lucida Console", ui-monospace, monospace;
-  font-size: 0.55rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  text-shadow: 0 0 6px currentColor;
-
-  opacity: 0.5;
-  transition:
-    opacity 0.15s,
-    border-color 0.15s;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  transition: color 0.1s;
 }
 
 .closeBtn:hover {
-  opacity: 0.9;
-  border-color: rgba(255, 255, 255, 0.5);
+  color: var(--color-text);
 }

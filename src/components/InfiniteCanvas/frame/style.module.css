@@ -9,7 +9,6 @@
   font-size: 0.6rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  text-shadow: 0 0 6px currentColor;
   mix-blend-mode: difference;
 }
 
@@ -117,6 +116,10 @@
   transform: translateX(-50%);
   width: 1px;
   height: 36px;
+  display: none;
+  @media (min-width: 768px) {
+    display: block;
+  }
 }
 .tickBottom {
   bottom: 0;
@@ -163,6 +166,7 @@
   top: 0;
   transform: translate(-50%, -50%);
   background: var(--gradient-rainbow);
+  background: transparent;
 }
 
 /* ── Top bar ──────────────────────────────────────────── */
@@ -187,8 +191,8 @@
 /* ── Left panel ───────────────────────────────────────── */
 .leftPanel {
   position: absolute;
-  left: 18px;
-  top: 12px;
+  left: 36px;
+  top: 60px;
   transform: translateY(0%);
   display: flex;
   flex-direction: column;

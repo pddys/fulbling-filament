@@ -308,7 +308,7 @@ export function Frame() {
   return (
     <div className={styles.hud}>
       {/* Corner brackets */}
-      <div className={`${styles.corner} ${styles.tl} ${styles.hiddenMobile}`} />
+      <div className={`${styles.corner} ${styles.tl}`} />
       <div className={`${styles.corner} ${styles.tr}`} />
       <div className={`${styles.corner} ${styles.bl}`} />
       <div className={`${styles.corner} ${styles.br}`} />
@@ -327,7 +327,7 @@ export function Frame() {
       {/* Top bar */}
       <div className={styles.topBar}>
         <div className={styles.topLeft}>
-          <div className={styles.hiddenMobile}>INFINITE CANVAS</div>
+          <div className={styles.hiddenMobile}></div>
         </div>
         <div className={styles.topRight}>
           <div className={styles.dataRow}>
