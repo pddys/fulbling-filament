@@ -13,21 +13,31 @@ export function AboutModal() {
 
   return (
     <>
-      <button className={styles.trigger} onClick={open} aria-label="About">
+      <button className={styles.trigger} onClick={open} aria-label='About'>
         About
       </button>
 
-      <dialog ref={dialogRef} className={styles.dialog} onClick={handleBackdropClick}>
+      <dialog
+        ref={dialogRef}
+        className={styles.dialog}
+        onClick={handleBackdropClick}
+      >
         <div className={styles.panel}>
           <div className={styles.header}>
             <div className={styles.panelTitle}>Infinite Canvas</div>
-            <button className={styles.closeBtn} onClick={close} aria-label="Close">✕</button>
+            <button
+              className={styles.closeBtn}
+              onClick={close}
+              aria-label='Close'
+            >
+              ✕
+            </button>
           </div>
 
           <p className={styles.body}>
-            A procedurally generated gallery of 215 works rendered across an
-            infinite three-dimensional plane. Navigate freely — there is no
-            boundary.
+            An infinite gallery of live events drawn from Spektrix venues.
+            Switch sources to explore a different programme. Navigate freely —
+            there is no boundary.
           </p>
 
           <div className={styles.divider} />
